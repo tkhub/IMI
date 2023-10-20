@@ -62,15 +62,15 @@ class MCP3XXX:
         self.__spi.close()
         return adc
 
-def test(chnum) -> int:
-    spi = spidev.SpiDev()
-    spi.open(0,0)
-    spi.max_speed_hz = 500000
-    read_ch0 = [0x06 | 0b00000001, 0x00 | 0b00000000, 0x00]
-    adc = spi.xfer2(read_ch0)
+# def test(chnum) -> int:
+#     spi = spidev.SpiDev()
+#     spi.open(0,0)
+#     spi.max_speed_hz = 500000
+#     read_ch0 = [0x06 | 0b00000001, 0x00 | 0b00000000, 0x00]
+#     adc = spi.xfer2(read_ch0)
 
-    data = ((adc[1] & 0x0F) << 8) | adc[2]
-    print(adc)
-    print(data)
-    spi.close()
+#     data = ((adc[1] & 0x0F) << 8) | adc[2]
+#     print(adc)
+#     print(data)
+#     spi.close()
 
