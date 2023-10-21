@@ -49,7 +49,6 @@ class MCP3XXX:
             adc = [0] * self.__chnum
             for i in range(self.__chnum):
                 val = self.__spi.xfer2(self.__genbit(i))
-                print(val)
                 adc[i] = self.__convdat(val)
         else :
             adc : int = 0
