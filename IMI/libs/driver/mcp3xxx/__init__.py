@@ -1,2 +1,2 @@
 
-from . import mcp3XXX
+from .mcp3XXX import MCP3XXX 
