@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f85f2c6bcb9a5a23d95c7967f0c0d094c5b2eb803acdd013af6b15172bf93f80"
+            "sha256": "5608751857a8db98429571f83037ba0538e9702bea5f4d399e914797c64383ed"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,6 +17,13 @@
         ]
     },
     "default": {
+        "rpi-hardware-pwm": {
+            "hashes": [
+                "sha256:5f7fbe1fc371bdd77ca09efd5e9e3da83195af32f3c4f3dcea6930f095867c9b"
+            ],
+            "index": "pypi",
+            "version": "==0.1.4"
+        },
         "rpi.gpio": {
             "hashes": [
                 "sha256:15311d3b063b71dee738cd26570effc9985a952454d162937c34e08c0fc99902",

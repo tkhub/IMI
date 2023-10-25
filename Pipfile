@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 spidev = "*"
 "rpi.gpio" = "*"
+rpi-hardware-pwm = "*"
 
 [dev-packages]
 
