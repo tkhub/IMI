@@ -1,5 +1,4 @@
 import time
-import sys
 from buzzer import UIBZ
 
 def main():
@@ -10,6 +9,7 @@ def main():
     time.sleep(1)
     BZ.play(329, 0.5,0.5)
     BZ.play(391, 0.5)
+    BZ.play(0)
 
 if __name__ == '__main__':
     main()

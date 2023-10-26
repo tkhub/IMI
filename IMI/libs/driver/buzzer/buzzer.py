@@ -1,42 +1,35 @@
 import time
-import RPi.GPIO as GPIO
+import pigpio
 
 class UIBZ:
 
-    __UIBZ_PIN = 19
-    __UIBZ_MIN_HZ = 40
-    __UIBZ_MAX_HZ = 10000
+    __PIN = 19
+    __MIN_HZ = 40
+    __MAX_HZ = 10000
+    __STOP_DUTY_VAL = 255
+    __PLAY_DUTY_VAL = 128
     def __init__(self) -> None:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.__UIBZ_PIN, GPIO.OUT)
-        self.__UIBZ_START = False
+        self.__PIGPIO = pigpio.pi()
+        self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
+        self.__PIGPIO.set_PWM_frequency(self.__PIN, 1000)
 
     def __del__(self):
-        GPIO.cleanup(self.__UIBZ_PIN)
+        self.__PIGPIO.stop()
 
     def close(self):
         self.__del__()
 
     def play(self, freq:int = 1000, playLength:float = None, pauseLength:float = None):
-        if self.__UIBZ_MAX_HZ < freq:
-            freq = self.__UIBZ_MAX_HZ
-
-        if self.__UIBZ_START == False:
-            self.__UIBZ_START = True
-            if freq < self.__UIBZ_MIN_HZ:
-                self.__UIBZ= GPIO.PWM(self.__UIBZ_PIN, self.__UIBZ_MIN_HZ)
-                self.__UIBZ.start(100)
-            else :
-                self.__UIBZ= GPIO.PWM(self.__UIBZ_PIN, freq)
-                self.__UIBZ.start(50)
+        if self.__MAX_HZ < freq:
+            freq = self.__MAX_HZ
+        if freq < self.__MIN_HZ:
+            self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
         else:
-            if freq < self.__UIBZ_MIN_HZ:
-                self.__UIBZ.ChangeDutyCycle(100)
-            else :
-                self.__UIBZ.ChangeFrequency(freq)
-                self.__UIBZ.ChangeDutyCycle(50)
+            self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__PLAY_DUTY_VAL)
+            self.__PIGPIO.set_PWM_frequency(self.__PIN, freq)
+
         if playLength != None:
             time.sleep(playLength)
         if pauseLength!= None:
             time.sleep(pauseLength)
-            self.__UIBZ.ChangeDutyCycle(100)
+            self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
