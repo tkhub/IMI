@@ -1,5 +1,5 @@
 import sys
-from .motor import MOTOR
+from motor import MOTOR
 
 def main():
     motor = MOTOR()

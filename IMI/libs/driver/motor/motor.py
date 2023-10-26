@@ -1,79 +1,79 @@
 import RPi.GPIO as GPIO
-from rpi_hardware_pwm import HardwarePWM
+# from rpi_hardware_pwm import HardwarePWM
+import pigpio
 
 class MOTOR:
-    __MOTOR_EN_PIN : int    = 5
-    __MOTOR_R_DIR_PIN :int  = 6
-    __MOTOR_L_DIR_PIN : int = 16
-    __MOTOR_L_PLS_CH : int = 0
-    __MOTOR_R_PLS_CH : int = 1
-    __MOTOR_PPS_MIN : int   = 4
-    __MOTOR_PPS_MAX : int   = 4000
-
+    __EN_PIN : int    = 5
+    __R_DIR_PIN :int  = 6
+    __L_DIR_PIN : int = 16
+    # __L_PLS_CH : int = 0
+    # __R_PLS_CH : int = 1
+    __L_PLS_PIN: int = 12
+    __R_PLS_PIN: int = 13
+    __PPS_MIN : int   = 4
+    __PPS_MAX : int   = 4000
+    __PIGPIOPWM_DUTYGAIN : int = 10000 
+    __STOP_DUTY : int = 100
+    __START_DUTY : int = 50
+    __DEFAULT_FRQ : int = 1000
     def __init__(self) -> None:
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.__MOTOR_EN_PIN, GPIO.OUT)
-        GPIO.setup(self.__MOTOR_L_DIR_PIN, GPIO.OUT)
-        GPIO.setup(self.__MOTOR_R_DIR_PIN, GPIO.OUT)
-        GPIO.output(self.__MOTOR_EN_PIN, False) # モータは止めておく
-        self.__MOTOR_L_PLS = HardwarePWM(pwm_channel=self.__MOTOR_L_PLS_CH, hz=100)
-        self.__MOTOR_R_PLS = HardwarePWM(pwm_channel=self.__MOTOR_R_PLS_CH, hz=100)
-        self.__MOTOR_L_STATE:bool = False
-        self.__MOTOR_R_STATE:bool = False
-        self.__MOTOR_L_PLS.start(100)
-        self.__MOTOR_R_PLS.start(100)
+        GPIO.setup(self.__EN_PIN, GPIO.OUT)
+        GPIO.setup(self.__L_DIR_PIN, GPIO.OUT)
+        GPIO.setup(self.__R_DIR_PIN, GPIO.OUT)
+        GPIO.output(self.__EN_PIN, False) # モータは止めておく
+        self.__PIGPIO = pigpio.pi()
+        # self.__L_PLS = HardwarePWM(pwm_channel=self.__L_PLS_CH, hz=100)
+        # self.__R_PLS = HardwarePWM(pwm_channel=self.__R_PLS_CH, hz=100)
+        self.__PIGPIO.hardware_PWM(self.__L_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
+        self.__PIGPIO.hardware_PWM(self.__R_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
+        self.__L_STATE:bool = False
+        self.__R_STATE:bool = False
+        # self.__L_PLS.start(100)
+        # self.__R_PLS.start(100)
 
     def __del__(self):
-        GPIO.cleanup(self.__MOTOR_EN_PIN)
-        GPIO.cleanup(self.__MOTOR_L_DIR_PIN)
-        GPIO.cleanup(self.__MOTOR_R_DIR_PIN)
-        self.__MOTOR_L_PLS.stop()
-        self.__MOTOR_R_PLS.stop()
+        GPIO.cleanup(self.__EN_PIN)
+        GPIO.cleanup(self.__L_DIR_PIN)
+        GPIO.cleanup(self.__R_DIR_PIN)
+        self.__PIGPIO.stop()
+        # self.__L_PLS.stop()
+        # self.__R_PLS.stop()
     
     def close(self):
         self.__del__()
     
     def start(self):
-        GPIO.output(self.__MOTOR_EN_PIN, True)
+        GPIO.output(self.__EN_PIN, True)
 
     def stop(self):
-        GPIO.output(self.__MOTOR_EN_PIN, False)
+        GPIO.output(self.__EN_PIN, False)
 
     def run(self, leftpps:int, rightpps:int) -> (int, int):
         leftppsrslt : int = 0
         rightppsrslt : int = 0
-        if  abs(leftpps) < abs(self.__MOTOR_PPS_MIN) or \
-            abs(leftpps) > abs(self.__MOTOR_PPS_MAX) :
-            if self.__MOTOR_L_STATE == True:
-                self.__MOTOR_L_STATE = False
-                self.__MOTOR_L_PLS.change_duty_cycle(100)
+        if  abs(leftpps) < abs(self.__PPS_MIN) or \
+            abs(leftpps) > abs(self.__PPS_MAX) :
+            self.__PIGPIO.hardware_PWM(self.__L_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
             leftppsrslt = 0
         else:
-            if self.__MOTOR_L_STATE == False:
-                self.__MOTOR_L_STATE = True
-                self.__MOTOR_L_PLS.change_duty_cycle(50)
-                print("L start")
             if leftpps < 0:
-                GPIO.output(self.__MOTOR_L_DIR_PIN, True)
+                GPIO.output(self.__L_DIR_PIN, True)
             else :
-                GPIO.output(self.__MOTOR_L_DIR_PIN, False)
-            self.__MOTOR_L_PLS.change_frequency(abs(leftpps))
+                GPIO.output(self.__L_DIR_PIN, False)
+            # self.__L_PLS.change_frequency(abs(leftpps))
+            self.__PIGPIO.hardware_PWM(self.__L_PLS_PIN, abs(leftpps), int(self.__START_DUTY*self.__PIGPIOPWM_DUTYGAIN))
             leftppsrslt = leftpps
-        if  abs(rightpps) < abs(self.__MOTOR_PPS_MIN) or \
-            abs(rightpps) > abs(self.__MOTOR_PPS_MAX) :
-            if self.__MOTOR_R_STATE== True:
-                self.__MOTOR_R_STATE = False
-                self.__MOTOR_R_PLS.change_duty_cycle(100)
+
+        if  abs(rightpps) < abs(self.__PPS_MIN) or \
+            abs(rightpps) > abs(self.__PPS_MAX) :
+            self.__PIGPIO.hardware_PWM(self.__R_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
             rightpps = 0
         else:
-            if self.__MOTOR_R_STATE == False:
-                self.__MOTOR_R_STATE = True
-                self.__MOTOR_R_PLS.change_duty_cycle(50)
-                print("R start")
             if rightpps < 0:
-                GPIO.output(self.__MOTOR_R_DIR_PIN, False)
+                GPIO.output(self.__R_DIR_PIN, False)
             else :
-                GPIO.output(self.__MOTOR_R_DIR_PIN, True)
-            self.__MOTOR_R_PLS.change_frequency(abs(rightpps))
+                GPIO.output(self.__R_DIR_PIN, True)
+            self.__PIGPIO.hardware_PWM(self.__R_PLS_PIN, abs(rightpps), int(self.__START_DUTY*self.__PIGPIOPWM_DUTYGAIN))
             rightppsrslt = rightpps
         return (leftppsrslt, rightppsrslt)
