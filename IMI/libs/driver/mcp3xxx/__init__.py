@@ -1,2 +1,2 @@
 
-from .import mcp3XXX
+from .import mcp3xxx

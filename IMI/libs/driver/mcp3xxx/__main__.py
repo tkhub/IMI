@@ -1,7 +1,6 @@
 import sys
 import time
-import spidev
-from .mcp3XXX import MCP3XXX
+from .mcp3xxx import MCP3XXX
 
 def main():
     spi = MCP3XXX(0,chnum = 8)
