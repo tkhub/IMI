@@ -1,9 +1,9 @@
 import sys
-from motor import MOTOR
+from motors import MOTORS
 import time
 
 def main():
-    motor = MOTOR()
+    motor = MOTORS()
     motor.start()
 #    while True:
 #        left = input("Left Speed(pps) = ")
