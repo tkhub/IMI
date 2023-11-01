@@ -19,7 +19,7 @@ class UIBZ:
     def close(self):
         self.__del__()
 
-    def play(self, freq:int = 1000, playLength:float = None, pauseLength:float = None):
+    def play(self, freq:int = 0, playLength:float = None, pauseLength:float = None):
         if self.__MAX_HZ < freq:
             freq = self.__MAX_HZ
         if freq < self.__MIN_HZ:
