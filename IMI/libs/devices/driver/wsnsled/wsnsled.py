@@ -21,9 +21,6 @@ class WSNSLED:
         self.__constcnt += 1
     
     def __del__(self):
-        self.close()
-    
-    def close(self):
         if 0 < self.__constcnt:
             GPIO.cleanup(self.LED_RR)
             GPIO.cleanup(self.LED_LL)
@@ -31,6 +28,9 @@ class WSNSLED:
             GPIO.cleanup(self.LED_FL)
             self.__constcnt -= 1
     
+    def close(self):
+        self.__del__()
+
     def write(self, ledch:int, level:bool) -> bool:
         if level == self.WLED_ON:
             GPIO.output(ledch, True)

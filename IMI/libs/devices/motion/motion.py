@@ -14,29 +14,24 @@ class motion:
     __x : float                 # [mm] 初期位置・方向での右
     __y : float                 # [mm] 初期位置・方向での左
     __deg : float               # [degrees]
+    __cnstcnt : int = 0
 
     def __init__(self) -> None:
         self.md = driver.motors.MOTORS()
         self.__x = 0.0
         self.__y = 0.0
         self.__deg = 0.0
-#    while True:
-#        left = input("Left Speed(pps) = ")
-#        right = input("Right Speed(pps) = ")
-#        input("Press Any Key...")
-#        motor.run(int(left), int(right))
-        # motor.run(530, 528)
-        # runTime.sleep(0.9*3)
-        # motor.close()
+        self.__cnstcnt += 0
 
     def __del__(self):
-        if self.md != None:
+        if 0 < self.__cnstcnt:
+            self.pause()
+            self.stop()
             self.md.close()
 
     def close(self):
-        if self.md != None:
-            self.md.close()
-    
+        self.__del__()
+
     def start(self):
         self.md.start()
 

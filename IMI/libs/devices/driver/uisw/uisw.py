@@ -10,17 +10,20 @@ class UISW:
     SW0 = 20
     SW1 = 26
     SW2 = 21
-
+    __cnstcnt : int = 0
     def __init__(self) -> None:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.SW0, GPIO.IN)
         GPIO.setup(self.SW1, GPIO.IN)
         GPIO.setup(self.SW2, GPIO.IN)
+        self.__cnstcnt += 1
     
     def __del__(self):
-        GPIO.cleanup(self.SW0)
-        GPIO.cleanup(self.SW1)
-        GPIO.cleanup(self.SW2)
+        if 0 < self.__cnstcnt:
+            GPIO.cleanup(self.SW0)
+            GPIO.cleanup(self.SW1)
+            GPIO.cleanup(self.SW2)
+            self.__cnstcnt -= 1
     
     def close(self):
         self.__del__()

@@ -33,19 +33,7 @@ class UILED:
             self.__cnstcnt -= 1
     
     def close(self):
-        if 0 < self.__cnstcnt:
-            self.___enddev()
-            self.__cnstcnt -= 1
-
-    def __enddev(self):
-        self.write(self.UILED0, self.UILED_OFF)
-        self.write(self.UILED1, self.UILED_OFF)
-        self.write(self.UILED2, self.UILED_OFF)
-        self.write(self.UILED3, self.UILED_OFF)
-        GPIO.cleanup(self.UILED0)
-        GPIO.cleanup(self.UILED1)
-        GPIO.cleanup(self.UILED2)
-        GPIO.cleanup(self.UILED3)
+        self.__del__()
 
     def write(self, ledch:int, level:bool) -> bool:
         if level == self.UILED_ON:

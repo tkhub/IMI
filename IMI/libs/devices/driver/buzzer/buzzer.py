@@ -8,13 +8,18 @@ class UIBZ:
     __MAX_HZ = 10000
     __STOP_DUTY_VAL = 255
     __PLAY_DUTY_VAL = 128
+    __cnstcnt : int = 0
     def __init__(self) -> None:
         self.__PIGPIO = pigpio.pi()
         self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
         self.__PIGPIO.set_PWM_frequency(self.__PIN, 1000)
+        self.__cnstcnt += 1
+
 
     def __del__(self):
-        self.__PIGPIO.stop()
+        if 0 < self.__cnstcnt:
+            self.__PIGPIO.stop()
+            self.__cnstcnt -= 1
 
     def close(self):
         self.__del__()
