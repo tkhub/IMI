@@ -62,21 +62,31 @@ class motion:
             print(delta_v)
             Vr = -delta_v
             Vl = delta_v
+            self.__deg += degrees
         elif (speed_mmps != None and (abs(self.__MINV) < abs(speed_mmps))) \
             and degrees != None:
             # lenghtのみ指定の場合、runTimeを求める
             if length != None:
                 runTime = length / speed_mmps
+                cllength = length
             if runTime != None and (self.__runTimeMIN <= runTime):
             # runTimeのみ指定の場合、runTimeが妥当ならdeltaVを計算
                 delta_v = (degrees/ runTime ) * self.__PI / 180 * self.__WIDTH / 2
-                print(delta_v)
+                cllength = speed_mmps * runTime
             else :
                 delta_v = 0
 
             Vr = speed_mmps - delta_v
             Vl = speed_mmps + delta_v
-
+            # 2Rsin(deg/2)
+            if abs(degrees) < abs(0.01):
+                self.__x += cllength * math.cos(math.radians(self.__deg))
+                self.__y += cllength * math.sin(math.radians(self.__deg))
+            else:
+                Lst = self.__WIDTH*(speed_mmps/delta_v) * math.sin(math.radians(degrees/2))
+                self.__x += Lst * math.cos(math.radians(degrees - self.__deg))
+                self.__y += Lst * math.sin(math.radians(degrees - self.__deg))
+                self.__deg += degrees
         else :
             Vr = 0
             Vl = 0
@@ -88,7 +98,6 @@ class motion:
             time.sleep(runTime)
         if continueFlag == False:
             self.md.run(int(0), int(0))
-        self.__deg += degrees
         return (vl_pps, vr_pps, runTime)
 
     def position(self) -> (float, float, float):

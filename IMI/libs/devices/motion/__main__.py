@@ -31,6 +31,7 @@ def main():
             length = float(length)
         input("Press Any Key...")
         print(mti.run(speed_mmps=speed, degrees=degrees, runTime=time, length=length,continueFlag=False))
+        print(mti.position())
         if degrees == None:
             print("Exit")
             break;
