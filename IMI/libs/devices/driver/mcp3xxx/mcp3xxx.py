@@ -38,7 +38,7 @@ class MCP3XXX:
             self.__cnstcnt -= 1
 
     def close(self):
-        self.__del__(self)
+        self.__del__()
 
     def __genbit(self, readch : int) -> list[int]:
         bytesdat = 0x0000AA | 0x060000 | (readch << 14)
