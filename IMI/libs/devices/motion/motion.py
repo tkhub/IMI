@@ -1,8 +1,11 @@
 import time
+import os
 import sys
 import math
-sys.path.append('../')
-import driver.motors 
+# sys.path.append('../')
+# import driver.motors 
+sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+from driver.motors import motors
 
 class motion:
     __WIDTH : float = 87.0      # [mm] ホイールトレッド95mm - 8mm
@@ -11,13 +14,16 @@ class motion:
     __PI : float = math.pi      # [-]
     __MINV : float = 0.1        # [mm/s]
     __runTimeMIN : float = 0.01    # [sec]
+    __PARAM_ANGLE_GAIN:float = 1.1065
+    __PARAM_ANGLE_OFFSET:float = 0
     __x : float                 # [mm] 初期位置・方向での右
     __y : float                 # [mm] 初期位置・方向での左
     __deg : float               # [degrees]
     __cnstcnt : int = 0
 
     def __init__(self) -> None:
-        self.md = driver.motors.MOTORS()
+        #self.md = driver.motors.MOTORS()
+        self.md = motors.MOTORS()
         self.__x = 0.0
         self.__y = 0.0
         self.__deg = 0.0
@@ -52,7 +58,7 @@ class motion:
         # ユースケース1：超信地旋回 speed = 0, deg = x runTime = x
         # ユースケース2-1：スラローム speed = x, deg = x runTime = x
         # ユースケース2-2：直線 speed = x, deg = x length = x
-
+        degrees = degrees * self.__PARAM_ANGLE_GAIN + self.__PARAM_ANGLE_OFFSET
         if (speed_mmps == None or (abs(speed_mmps) <= abs(self.__MINV))) \
             and degrees != None \
             and (runTime != None and (self.__runTimeMIN <= runTime)):

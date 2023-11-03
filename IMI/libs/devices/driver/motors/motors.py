@@ -33,8 +33,6 @@ class MOTORS:
         # self.__R_PLS.start(100)
 
     def __del__(self):
-        # self.__L_PLS.stop()
-        # self.__R_PLS.stop()
         if 0 < self.__cnstcnt:
             GPIO.cleanup(self.__EN_PIN)
             GPIO.cleanup(self.__L_DIR_PIN)
@@ -43,6 +41,7 @@ class MOTORS:
             self.__cnstcnt -= 1
     
     def close(self):
+        self.stop()
         self.__del__()
 
     def start(self):
