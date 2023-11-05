@@ -109,7 +109,7 @@ class wallsensors:
         return  (self.PARAM_FL.normalize(snsval[0]),self.PARAM_LL.normalize(snsval[1]), self.PARAM_RR.normalize(snsval[2]),self.PARAM_FR.normalize(snsval[3]))
     
 
-    def read(self) -> (float, float, float):
+    def read(self) -> (bool, bool, bool, float, float, float):
         # 前、左右、傾きのズレ
         diff : float = 0.0
         length : float = 0.0
@@ -141,5 +141,20 @@ class wallsensors:
             length = (snsval[0] + snsval[3]) / 2
             degrees = math.degrees(math.asin((snsval[3] - snsval[0])/MOUSEW))
 
-        return (diff, length,degrees)
+        if snsval[0] == None or snsval[3] == None:
+            f_sns = False
+        else :
+            f_sns = True
+
+        if snsval[1] == None:
+            l_sns = False
+        else :
+            l_sns = True
+        
+        if snsval[2] == None:
+            r_sns = False
+        else :
+            r_sns = True
+
+        return (l_sns, f_sns, r_sns, diff, length, degrees,)
 

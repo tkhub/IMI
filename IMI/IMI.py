@@ -31,17 +31,39 @@ def main():
     
     UIBZ.play(2000,pauseLength=1)
     print("3")
-    sleep(1)
+    UIBZ.play(440,pauseLength=0.5)
+    sleep(0.5)
     print("2")
-    sleep(1)
+    UIBZ.play(600,pauseLength=0.5)
+    sleep(0.5)
     print("1")
-    sleep(1)
+    UIBZ.play(800,pauseLength=0.5)
+    sleep(0.5)
     print("GO")
     UIBZ.play(1000,pauseLength=0.5)
     MVMOTION.start()
-    # MVMOTION.run(speed_mmps=100, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+    MVMOTION.run(speed_mmps=100, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+    sleep(10)
    #  MVMOTION.run(speed_mmps= 0, degrees = 90, runTime = 0.5, continueFlag=False)
-    MVMOTION.run(speed_mmps= 0, degrees = -180, runTime = 0.5, continueFlag=False)
+    while True:
+        wsns = WLSNS.read()
+        # print(wsns)
+        if wsns[1] == False:
+            # 前が空いてる
+            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+        elif wsns[2] == False:
+            # 右が空いてる
+            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+            MVMOTION.run(speed_mmps=0, degrees = 90, runTIme=0.25, continueFlag=False)
+        elif wsns[0] == False:
+            # 左が空いてる
+            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+            MVMOTION.run(speed_mmps=0, degrees = -90, runTIme=0.25, continueFlag=False)
+        else:
+            # Uターン
+            MVMOTION.run(speed_mmps=0, degrees = 180, runTime=0.5, continueFlag=False)
+        if  uisw.read(uisw.SW0) == True  and uisw.read(uisw.SW1) == True and uisw.read(uisw.SW2) == True :
+            break
     sleep(1)
     uisw.close()
     UILED.close()
