@@ -18,7 +18,7 @@ class UILED:
         GPIO.setup(self.UILED1, GPIO.OUT)
         GPIO.setup(self.UILED2, GPIO.OUT)
         GPIO.setup(self.UILED3, GPIO.OUT)
-        self.__cnstcnt += 0
+        self.__cnstcnt += 1
     
     def __del__(self):
         if 0 < self.__cnstcnt:
