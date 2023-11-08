@@ -1,7 +1,9 @@
 from maze import Maze
 
 def main():
+    print("Init")
     testmaze = Maze(maze_size=(8,8), goal=(4,4))
+    testmaze.calcMaze()
     testmaze.show()
     testmaze.checkwall(position=(0,0), wwall=True)
     testmaze.checkwall(position=(0,1), wwall=True)
@@ -10,6 +12,7 @@ def main():
     testmaze.checkwall(position=(0,5), wwall=True)
     testmaze.checkwall(position=(0,6), wwall=True)
 
+    print("\n####Run & Check####")
     testmaze.checkwall(position=(1,0), wwall=True)
     testmaze.checkwall(position=(1,1), wwall=True)
     testmaze.checkwall(position=(1,2), wwall=True)
@@ -47,7 +50,9 @@ def main():
 
     testmaze.checkwall(position=(7,0), nwall=True)
 
+    testmaze.calcMaze()
     testmaze.show()
+    
     
 
 if __name__ == '__main__':
