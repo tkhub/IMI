@@ -69,6 +69,8 @@ class motion:
             Vr = -delta_v
             Vl = delta_v
             self.__deg += degrees
+            if 360.00 < self.__deg:
+                self.__deg = self.__deg - 360.00
         elif (speed_mmps != None and (abs(self.__MINV) < abs(speed_mmps))) \
             and degrees != None:
             # lenghtのみ指定の場合、runTimeを求める
@@ -93,6 +95,8 @@ class motion:
                 self.__x += Lst * math.cos(math.radians(degrees - self.__deg))
                 self.__y += Lst * math.sin(math.radians(degrees - self.__deg))
                 self.__deg += degrees
+                if 360.00 < self.__deg:
+                    self.__deg = self.__deg - 360.00
         else :
             Vr = 0
             Vl = 0

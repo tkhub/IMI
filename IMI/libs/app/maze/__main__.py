@@ -1,59 +1,59 @@
 from maze import Maze
 
 def main():
-    print("Init")
-    testmaze = Maze(maze_size=(8,8), goal=(4,4))
-    testmaze.calcMaze()
-    testmaze.show()
-    testmaze.checkwall(position=(0,0), wwall=True)
-    testmaze.checkwall(position=(0,1), wwall=True)
-    testmaze.checkwall(position=(0,2), wwall=True)
-    testmaze.checkwall(position=(0,3), nwall=True)
-    testmaze.checkwall(position=(0,5), wwall=True)
-    testmaze.checkwall(position=(0,6), wwall=True)
 
-    print("\n####Run & Check####")
-    testmaze.checkwall(position=(1,0), wwall=True)
-    testmaze.checkwall(position=(1,1), wwall=True)
-    testmaze.checkwall(position=(1,2), wwall=True)
-    testmaze.checkwall(position=(1,3), nwall=True)
-    testmaze.checkwall(position=(1,5), nwall=True, wwall=True)
+    rx:float = 0.0
+    ry:float = 0.0
+    rdeg:float = 0.0
+    offset_f = 90
+    print("----------Init---------")
+    cnt:int = 0    
+    print(f"--------{cnt}--------")
+    smallmaze = Maze(maze_size=(6,6), goal=(3,3))
+    smallmaze.refreshStep()
+    smallmaze.calcStep()
+    smallmaze.show()
+    cnt += 1    
 
-    testmaze.checkwall(position=(2,1), swall=True)
-    testmaze.checkwall(position=(2,2), wwall=True)
-    testmaze.checkwall(position=(2,3), nwall=True, wwall=True)
-    testmaze.checkwall(position=(2,4), wwall=True)
-    testmaze.checkwall(position=(2,7), swall=True)
+    print(f"\n--------{cnt}--------")
+    ry += 90
+    print("90mm GO")
+    mazedat = smallmaze.real2maze(position=(rx, ry, rdeg), offset=(0, offset_f), snsWalls=(True, False, True))
+    smallmaze.checkwall(position_xy=mazedat[:2], walls_nsew=mazedat[2:])
+    smallmaze.refreshStep()
+    smallmaze.calcStep()
+    smallmaze.show()
+    cnt += 1    
 
-    testmaze.checkwall(position=(3,1), swall=True,wwall=True)
-    testmaze.checkwall(position=(3,2), nwall=True)
-    testmaze.checkwall(position=(3,6), swall=True)
-    testmaze.checkwall(position=(3,7), swall=True)
+    print(f"\n--------{cnt}--------")
+    ry += 90
+    print("90mm GO")
+    mazedat = smallmaze.real2maze(position=(rx, ry, rdeg), offset=(0, offset_f), snsWalls=(True, False, True))
+    smallmaze.checkwall(position_xy=mazedat[:2], walls_nsew=mazedat[2:])
+    smallmaze.refreshStep()
+    smallmaze.calcStep()
+    smallmaze.show()
+    cnt += 1    
 
-    testmaze.checkwall(position=(4,1), wwall=True)
-    testmaze.checkwall(position=(4,2), nwall=True,wwall=True)
-    testmaze.checkwall(position=(4,5), swall=True)
-    testmaze.checkwall(position=(4,7), swall=True)
+    print(f"\n--------{cnt}--------")
+    ry += 90
+    print("90mm GO")
+    mazedat = smallmaze.real2maze(position=(rx, ry, rdeg), offset=(0, offset_f), snsWalls=(True, False, True))
+    smallmaze.checkwall(position_xy=mazedat[:2], walls_nsew=mazedat[2:])
+    smallmaze.refreshStep()
+    smallmaze.calcStep()
+    smallmaze.show()
+    cnt += 1    
 
-    testmaze.checkwall(position=(5,0), nwall=True)
-    testmaze.checkwall(position=(5,1), nwall=True)
-    testmaze.checkwall(position=(5,2), nwall=True)
-    testmaze.checkwall(position=(5,3), ewall=True, nwall=True)
-    testmaze.checkwall(position=(5,4), ewall=True, nwall=True)
-    testmaze.checkwall(position=(5,5), ewall=True, nwall=True)
-    testmaze.checkwall(position=(5,6), ewall=True, nwall=True)
-
-    testmaze.checkwall(position=(6,1), wwall=True)
-    testmaze.checkwall(position=(6,2), wwall=True)
-    testmaze.checkwall(position=(6,4), nwall=True, wwall=True)
-    testmaze.checkwall(position=(6,6), nwall=True, wwall=True)
-
-    testmaze.checkwall(position=(7,0), nwall=True)
-
-    testmaze.calcMaze()
-    testmaze.show()
-    
-    
+    print(f"\n--------{cnt}--------")
+    rdeg = 90
+    print("+90deg")
+    mazedat = smallmaze.real2maze(position=(rx, ry, rdeg), offset=(0, offset_f), snsWalls=(True, False, True))
+    smallmaze.checkwall(position_xy=mazedat[:2], walls_nsew=mazedat[2:])
+    smallmaze.refreshStep()
+    smallmaze.calcStep()
+    smallmaze.show()
+    cnt += 1    
 
 if __name__ == '__main__':
     main()

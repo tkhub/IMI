@@ -1,4 +1,5 @@
 from typing import Optional
+from math import sin, cos, radians
 from enum import Enum
 class Maze:
     class Grid:
@@ -28,78 +29,136 @@ class Maze:
         def __init__(self, grid = None):
             self.child1 = None
             self.child2 = None
-
+    INDEX_X:int = 0
+    INDEX_Y:int = 1
+    INDEX_NORTH:int = 0
+    INDEX_SOUTH:int = 1
+    INDEX_EAST:int = 2
+    INDEX_WEST:int = 3
+    INDEX_Y:int = 1
     __GOAL_SIZE_X :int = 2
     __GOAL_SIZE_Y :int = 2
     __MAZE_GRID_SIZE:int = 180
     __GOAL_POSITION_X:int
     __GOAL_POSITION_Y:int
-    __MAZE_SIZE_X :int
-    __MAZE_SIZE_Y :int
+    __MAZE_MAX_X :int
+    __MAZE_MAX_Y :int
+    __MAZE_MIN_X :int
+    __MAZE_MIN_Y :int
+    __MAZE_OCEAN : int
     
-    def __init__(self, maze_size:(int,int), goal:(int, int)) -> None:
-        self.__MAZE_SIZE_X = maze_size[0]
-        self.__MAZE_SIZE_Y = maze_size[1]
-        self.__GOAL_POSITION_X = goal[0]
-        self.__GOAL_POSITION_Y = goal[1]
-        tmpmaze = self.Grid()
-        tmpmaze.n_wall = None
-        tmpmaze.s_wall = None
-        tmpmaze.w_wall = None
-        tmpmaze.e_wall = None
-        tmpmaze.g_step = None
-        tmpmaze.goal_way = tmpmaze.WayFinding.NOWAY
-        # self.__MAZE_GRIDS = [[self.Grid() for x in range(self.__MAZE_SIZE_X)] for y in range(self.__MAZE_SIZE_Y)]
-        self.__MAZE_GRIDS = [[self.Grid() for y in range(self.__MAZE_SIZE_Y)] for x in range(self.__MAZE_SIZE_X)]
-        for x in range(self.__MAZE_SIZE_X):
-            self.__MAZE_GRIDS[x][0].s_wall = True
-            self.__MAZE_GRIDS[x][self.__MAZE_SIZE_Y - 1].n_wall = True
-        for y in range(self.__MAZE_SIZE_Y):
-            self.__MAZE_GRIDS[0][y].e_wall = True
-            self.__MAZE_GRIDS[self.__MAZE_SIZE_X - 1][y].w_wall = True
-        self.__MAZE_GRIDS[goal[0]][goal[1]].g_step = 0
-        self.__MAZE_GRIDS[goal[0] - self.__GOAL_SIZE_X + 1][goal[1] - self.__GOAL_SIZE_Y + 1].g_step = 0
-        self.__MAZE_GRIDS[goal[0]][goal[1] - self.__GOAL_SIZE_Y + 1].g_step = 0
-        self.__MAZE_GRIDS[goal[0] - self.__GOAL_SIZE_X + 1][goal[1]].g_step = 0
+    #             0  MIN_X ........ MAX_X..len(list[0])
+    #          0.....................................
+    #           .....................................
+    #      MIN_Y.....................................
+    #           .....................................
+    #           .....................................
+    #           .....................................
+    #      MAX_X.....................................
+    #           .....................................
+    #  len(list).....................................
 
+    def __init__(self, maze_size:tuple[int,int], goal:tuple[int, int]) -> None:
+        self.__MAZE_MIN_X = 1
+        self.__MAZE_MIN_Y = 1
+        self.__MAZE_MAX_X = maze_size[self.INDEX_X] + self.__MAZE_MIN_X -1
+        self.__MAZE_MAX_Y = maze_size[self.INDEX_Y] + self.__MAZE_MIN_Y -1
+        self.__MAZE_OCEAN = maze_size[self.INDEX_X] * maze_size[self.INDEX_Y] + 2
+        self.__GOAL_POSITION_X = goal[self.INDEX_X] + self.__MAZE_MIN_X
+        self.__GOAL_POSITION_Y = goal[self.INDEX_Y] + self.__MAZE_MIN_Y
+        self.__MAZE_GRIDS = [[self.Grid() for y in range(self.__MAZE_MAX_Y + 2)] for x in range(self.__MAZE_MAX_X + 2)]
+        for x, grids_y in enumerate(self.__MAZE_GRIDS):
+            for y, grid in enumerate(grids_y):
+                # 周囲を壁で埋める
+                # 周囲を高いステップ数で埋める
+                if x == 0:
+                    if y != 0 or y != self.__MAZE_MAX_Y + 1:
+                        grid.w_wall = True
+
+                    grid.g_step = self.__MAZE_OCEAN
+                if x == self.__MAZE_MIN_X:
+                    grid.e_wall = True
+                if x == (len(self.__MAZE_GRIDS) - 1):
+                    if y != 0 or y != self.__MAZE_MAX_Y + 1:
+                        grid.e_wall = True
+                    grid.g_step = self.__MAZE_OCEAN
+                if x == self.__MAZE_MAX_X:
+                    grid.w_wall = True
+
+                if y == 0:
+                    if x != 0 or x != self.__MAZE_MAX_X + 1:
+                        grid.n_wall = True
+                    grid.g_step = self.__MAZE_OCEAN
+                if y == self.__MAZE_MIN_Y:
+                    grid.s_wall = True
+                if y == len(grids_y) - 1:
+                    grid.s_wall = True
+                    grid.g_step = self.__MAZE_OCEAN
+                if y == self.__MAZE_MAX_Y:
+                    grid.n_wall = True
+                # ゴールのステップ数を入れる
+                if self.__isGoal((x,y)):
+                    grid.g_step = 0
+
+    
     def __isGoal(self, position:(int,int)) -> bool:
-        if      (   self.__GOAL_POSITION_X == position[0] \
-            or      self.__GOAL_POSITION_X == (position[0] + 1)) \
-            and (   self.__GOAL_POSITION_Y == position[1] \
-            or      self.__GOAL_POSITION_Y == (position[1] + 1)):
+        if      (   self.__GOAL_POSITION_X == position[self.INDEX_X] \
+            or      self.__GOAL_POSITION_X == (position[self.INDEX_X] + 1)) \
+            and (   self.__GOAL_POSITION_Y == position[self.INDEX_Y] \
+            or      self.__GOAL_POSITION_Y == (position[self.INDEX_Y] + 1)):
             return True
         else:
             return False
 
-    def checkwall(  self, position=(int,int), nwall:Optional[bool] = None, \
-                    wwall:Optional[bool] = None, ewall:Optional[bool] = None, swall:Optional[bool] = None):
-        if nwall == True:
-            self.__MAZE_GRIDS[position[0]][position[1]].n_wall = True
-            if position[1] != self.__MAZE_SIZE_Y - 1:
-                self.__MAZE_GRIDS[position[0]][position[1]+1].s_wall = True
-        elif nwall == False:
-            self.__MAZE_GRIDS[position[0]][position[1]].n_wall = False
+    def checkwall(  self, position_xy=tuple[int,int], walls_nsew:tuple[Optional[bool], Optional[bool],Optional[bool],Optional[bool]] = (None, None, None, None)):
+        pindex_xy = (position_xy[self.INDEX_X] + self.__MAZE_MIN_X, position_xy[self.INDEX_Y] + self.__MAZE_MIN_Y)
+        if      pindex_xy[self.INDEX_X] < self.__MAZE_MIN_X or self.__MAZE_MAX_X < pindex_xy[self.INDEX_X] \
+            or  pindex_xy[self.INDEX_Y] < self.__MAZE_MIN_Y or self.__MAZE_MAX_Y < pindex_xy[self.INDEX_Y] :
+            print("EXIT")
+        else:
+            # 北壁更新あり かつ 迷路の北端でない
+            if walls_nsew[self.INDEX_NORTH]!= None and pindex_xy[self.INDEX_Y] != self.__MAZE_MAX_Y:
+                # 北壁あり
+                if walls_nsew[self.INDEX_NORTH] == True:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].n_wall = True
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y] + 1].s_wall = True
+                # 北壁なし
+                else:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].n_wall = False
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y] + 1].s_wall = False
 
-        if swall == True:
-            self.__MAZE_GRIDS[position[0]][position[1]].s_wall = True
-            if position[1] != 0:
-                self.__MAZE_GRIDS[position[0]][position[1]-1].n_wall = True
-        elif swall == False:
-            self.__MAZE_GRIDS[position[0]][position[1]].s_wall = False
+            # 南壁更新あり かつ 迷路の南端でない
+            if walls_nsew[self.INDEX_SOUTH]!= None and pindex_xy[self.INDEX_Y] != self.__MAZE_MIN_Y:
+                # 南壁あり
+                if walls_nsew[self.INDEX_SOUTH] == True:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].s_wall = True
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y] - 1].n_wall = True
+                # 南壁なし
+                else:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].s_wall = False
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y] - 1].n_wall = False
 
-        if ewall == True:
-            self.__MAZE_GRIDS[position[0]][position[1]].e_wall = True
-            if position[0] != 0:
-                self.__MAZE_GRIDS[position[0]-1][position[1]].w_wall = True
-        elif ewall == False:
-            self.__MAZE_GRIDS[position[0]][position[1]].e_wall = False
+            # 東壁更新あり かつ 迷路の東端でない
+            if walls_nsew[self.INDEX_WEST]!= None and pindex_xy[self.INDEX_X] != self.__MAZE_MAX_X:
+                # 東壁あり
+                if walls_nsew[self.INDEX_WEST] == True:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].w_wall = True
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X] + 1][pindex_xy[self.INDEX_Y]].e_wall = True
+                # 東壁なし
+                else:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].w_wall = False
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X] + 1][pindex_xy[self.INDEX_Y]].e_wall = False
 
-        if wwall == True:
-            self.__MAZE_GRIDS[position[0]][position[1]].w_wall = True
-            if position[0] != self.__MAZE_SIZE_X - 1:
-                self.__MAZE_GRIDS[position[0]+1][position[1]].e_wall = True
-        elif wwall == False:
-            self.__MAZE_GRIDS[position[0]][position[1]].w_wall = False
+            # 西壁更新あり かつ 迷路の西端でない
+            if walls_nsew[self.INDEX_EAST]!= None and pindex_xy[self.INDEX_X] != self.__MAZE_MIN_X:
+                # 西壁あり
+                if walls_nsew[self.INDEX_EAST] == True:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].e_wall = True
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X] - 1][pindex_xy[self.INDEX_Y]].w_wall = True
+                # 西壁なし
+                else:
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X]][pindex_xy[self.INDEX_Y]].e_wall = False
+                    self.__MAZE_GRIDS[pindex_xy[self.INDEX_X] - 1][pindex_xy[self.INDEX_Y]].w_wall = False
 
 
     def show(self) :
@@ -108,20 +167,30 @@ class Maze:
         mazestrL:str
         num:int
         yi:int
-        for y in range(self.__MAZE_SIZE_Y):
-            yi = self.__MAZE_SIZE_Y - y - 1
-            mazestrH ="    "
-            mazestrM = " " + str(yi).rjust(3)
-            mazestrL ="    "
-            for x in range(self.__MAZE_SIZE_X):
+        for y in range(len(self.__MAZE_GRIDS[0])):
+            yi = len(self.__MAZE_GRIDS[0]) - y - 1
+            mazestrH ="      "
+            # if self.__MAZE_MIN_Y  <= y and y <= self.__MAZE_MAX_Y:
+            if 0 != y and y != (len(self.__MAZE_GRIDS[0]) - 1):
+                mazestrM = "  " + str(yi - 1).rjust(3) + " "
+            else:
+                mazestrM = "      "
+            mazestrL ="      "
+            for x in range(len(self.__MAZE_GRIDS)):
                 if self.__MAZE_GRIDS[x][yi].n_wall == True:
                     mazestrH += "+-------+"
-                else:
+                elif self.__MAZE_GRIDS[x][yi].n_wall == False:
                     mazestrH += "+       +"
+                else:
+                    mazestrH += "+   -   +"
+
                 if self.__MAZE_GRIDS[x][yi].e_wall == True:
                     mazestrM += "|"
-                else :
+                elif self.__MAZE_GRIDS[x][yi].e_wall == False:
                     mazestrM += " "
+                else :
+                    mazestrM += "-"
+
                 # フラグ表示
                 if self.__isGoal((x,yi)) == True:
                     mazestrM += " G"
@@ -149,46 +218,51 @@ class Maze:
                 
                 if self.__MAZE_GRIDS[x][yi].w_wall == True:
                     mazestrM += "|"
-                else:
+                elif self.__MAZE_GRIDS[x][yi].w_wall == False:
                     mazestrM += " "
+                else:
+                    mazestrM += "-"
 
                 if self.__MAZE_GRIDS[x][yi].s_wall == True:
                     mazestrL += "+-------+"
-                else:
+                elif self.__MAZE_GRIDS[x][yi].s_wall == False:
                     mazestrL += "+       +"
+                else:
+                    mazestrL += "+   -   +"
             print(mazestrH)
             print(mazestrM)
             print(mazestrL)
-        mazestrH =" \t"
-        for x in range(self.__MAZE_SIZE_X):
-            mazestrH += "    " + str(x) + "    "
+        mazestrH ="               "
+        for x in range(self.__MAZE_MIN_X,self.__MAZE_MAX_X + 1):
+            mazestrH += "   " + str(x-1).ljust(3) + "   "
         print(mazestrH)
 
-    def calcMaze(self):
-        # 
-        for x in range(self.__MAZE_SIZE_X):
-            for y in range(self.__MAZE_SIZE_Y):
+    def refreshStep(self):
+        for x in range(self.__MAZE_MIN_X, self.__MAZE_MAX_X + 1):
+            for y in range(self.__MAZE_MIN_Y, self.__MAZE_MAX_Y + 1):
             #      if self.__isGoal() != True:
                 if self.__isGoal((x,y)) == True:
                     self.__MAZE_GRIDS[x][y].g_step = 0
                 else:
                     self.__MAZE_GRIDS[x][y].g_step = None
-                
+
+    def calcStep(self):
+        cnt:int = 0
         loopend:bool = True 
         while loopend:
-            for x in range(self.__MAZE_SIZE_X):
-                for y in range(self.__MAZE_SIZE_Y):
+            for x in range(self.__MAZE_MIN_X, self.__MAZE_MAX_X + 1):
+                for y in range(self.__MAZE_MIN_Y, self.__MAZE_MAX_Y + 1):
                     # ステップを計算すべきマスがある
                     if self.__MAZE_GRIDS[x][y].g_step != None:
                         # 西にいける
-                        if  x != 0:
+                        if  x != self.__MAZE_MIN_X:
                             # ゴールの場合じゃないなら更新する
                             # 西の壁がないか、未探索
                             if      self.__MAZE_GRIDS[x - 1][y].g_step == None \
                                 and (self.__MAZE_GRIDS[x][y].e_wall == False or self.__MAZE_GRIDS[x][y].e_wall == None):
                                 self.__MAZE_GRIDS[x - 1][y].g_step = self.__MAZE_GRIDS[x][y].g_step + 1
                         # 東にいける
-                        if  x != self.__MAZE_SIZE_X - 1:
+                        if  x != self.__MAZE_MAX_X:
                             # ゴールの場合じゃないなら更新する
                             # 東の壁がないか、未探索
                             if      self.__MAZE_GRIDS[x + 1][y].g_step == None \
@@ -196,7 +270,7 @@ class Maze:
                                 self.__MAZE_GRIDS[x + 1][y].g_step = self.__MAZE_GRIDS[x][y].g_step + 1
 
                         # 北にいける
-                        if  y != self.__MAZE_SIZE_Y - 1:
+                        if  y != self.__MAZE_MAX_Y:
                             # ゴールの場合じゃないなら更新する
                             # 北の壁がないか、未探索
                             if      self.__MAZE_GRIDS[x][y + 1].g_step == None \
@@ -204,18 +278,50 @@ class Maze:
                                 self.__MAZE_GRIDS[x][y + 1].g_step = self.__MAZE_GRIDS[x][y].g_step + 1
 
                         # 南にいける
-                        if  y != 0:
+                        if  y != self.__MAZE_MIN_Y:
                             # ゴールの場合じゃないなら更新する
                             # 南の壁がないか、未探索
                             if      self.__MAZE_GRIDS[x][y - 1].g_step == None \
                                 and (self.__MAZE_GRIDS[x][y].s_wall == False or self.__MAZE_GRIDS[x][y].s_wall == None):
                                 self.__MAZE_GRIDS[x][y - 1].g_step = self.__MAZE_GRIDS[x][y].g_step + 1
             loopend = False
-            for x in range(self.__MAZE_SIZE_X):
-                for y in range(self.__MAZE_SIZE_Y):
+            for x in range(self.__MAZE_MIN_X, self.__MAZE_MAX_X + 1):
+                for y in range(self.__MAZE_MIN_Y, self.__MAZE_MAX_Y + 1):
                     if self.__MAZE_GRIDS[x][y].g_step == None:
                         loopend = True
-                        
+            if (self.__MAZE_OCEAN * self.__MAZE_OCEAN) < cnt:
+                break
+            cnt += 1
                 # else:
                 #     print(f'LOOP CONT ({x},{y}) = {self.__MAZE_GRIDS[x][y].g_step}')
                 #     loopend = True
+    def real2maze(self, position:tuple[float, float, float], offset:tuple[float, float], snsWalls:tuple[bool, bool, bool]) -> tuple[int, int, Optional[bool],Optional[bool],Optional[bool],Optional[bool]]:
+        rfang = position[2]
+        # 東向きの座標
+        rfx = position[self.INDEX_X] + offset[self.INDEX_X] * sin(radians(rfang))
+        # 北向きの座標
+        rfy = position[self.INDEX_Y] + offset[self.INDEX_Y] * cos(radians(rfang))
+        print(f"{rfx},{rfy}")
+        sns_l = snsWalls[0]
+        sns_f = snsWalls[1]
+        sns_r = snsWalls[2]
+        ix = round(rfx / self.__MAZE_GRID_SIZE)
+        iy = round(rfy / self.__MAZE_GRID_SIZE)
+        tmps = (None, None, None, None)
+        if (315.0 < rfang and rfang <= 360.0) or (0.0 <= rfang and rfang < 45.0):
+            # 北向き
+            # def checkwall(  self, position_xy=tuple[int,int], walls_nsew:tuple[Optional[bool], Optional[bool],Optional[bool],Optional[bool]] = (None, None, None, None)):
+            tmps = (sns_f, None, sns_l, sns_r)
+        elif (45.0 < rfang and rfang <= 135.0):
+            # 東向き
+            tmps = (sns_l, sns_r, None, sns_f)
+        elif (135.0 < rfang and rfang <= 215.0):
+            # 南向き
+            tmps = (None, sns_f, sns_r, sns_l)
+        elif (215.0 < rfang and rfang <= 315.0):
+            # 西向き
+            tmps = (sns_r, sns_l, sns_f, None)
+        else:
+            pass
+        # walls_nse
+        return (ix, iy, tmps[0], tmps[1], tmps[2], tmps[3])
