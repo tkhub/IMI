@@ -1,5 +1,5 @@
 from typing import Optional
-from math import sin, cos, radians
+from math import sin, cos, radians, floor
 from enum import Enum
 class Maze:
     class Grid:
@@ -91,6 +91,10 @@ class Maze:
                     grid.g_step = self.__MAZE_OCEAN
                 if y == self.__MAZE_MIN_Y:
                     grid.s_wall = True
+                    if x == self.__MAZE_MIN_X:
+                        grid.w_wall = True
+                    if x == self.__MAZE_MIN_X + 1:
+                        grid.e_wall = True
                 if y == len(grids_y) - 1:
                     grid.s_wall = True
                     grid.g_step = self.__MAZE_OCEAN
@@ -161,7 +165,7 @@ class Maze:
                     self.__MAZE_GRIDS[pindex_xy[self.INDEX_X] - 1][pindex_xy[self.INDEX_Y]].w_wall = False
 
 
-    def show(self) :
+    def show(self, position:tuple[Optional[int], Optional[int]] = (None, None)) :
         mazestrH:str
         mazestrM:str
         mazestrL:str
@@ -170,7 +174,6 @@ class Maze:
         for y in range(len(self.__MAZE_GRIDS[0])):
             yi = len(self.__MAZE_GRIDS[0]) - y - 1
             mazestrH ="      "
-            # if self.__MAZE_MIN_Y  <= y and y <= self.__MAZE_MAX_Y:
             if 0 != y and y != (len(self.__MAZE_GRIDS[0]) - 1):
                 mazestrM = "  " + str(yi - 1).rjust(3) + " "
             else:
@@ -194,7 +197,7 @@ class Maze:
                 # フラグ表示
                 if self.__isGoal((x,yi)) == True:
                     mazestrM += " G"
-                elif x == 0 and yi == 0:
+                elif x == self.__MAZE_MIN_X and yi == self.__MAZE_MIN_Y:
                     mazestrM += " S"
                 elif self.__MAZE_GRIDS[x][yi].goal_way != None:
                     if self.__MAZE_GRIDS[x][yi].goal_way == self.__MAZE_GRIDS[x][yi].WayFinding.EAST:
@@ -295,18 +298,21 @@ class Maze:
                 # else:
                 #     print(f'LOOP CONT ({x},{y}) = {self.__MAZE_GRIDS[x][y].g_step}')
                 #     loopend = True
-    def real2maze(self, position:tuple[float, float, float], offset:tuple[float, float], snsWalls:tuple[bool, bool, bool]) -> tuple[int, int, Optional[bool],Optional[bool],Optional[bool],Optional[bool]]:
+    def real2maze(self, position:tuple[float, float, float], offset:tuple[float, float], snsWalls:tuple[bool, bool, bool]) -> tuple[int, int, int, int, Optional[bool],Optional[bool],Optional[bool],Optional[bool]]:
         rfang = position[2]
         # 東向きの座標
-        rfx = position[self.INDEX_X] + offset[self.INDEX_X] * cos(radians(rfang)) + offset[self.INDEX_Y] * sin(radians(rfang))
+        rfx = position[self.INDEX_X]
+        srfx = rfx + offset[self.INDEX_X] * cos(radians(rfang)) + offset[self.INDEX_Y] * sin(radians(rfang))
         # 北向きの座標
-        rfy = position[self.INDEX_Y] + offset[self.INDEX_Y] * cos(radians(rfang)) - offset[self.INDEX_X] * sin(radians(rfang))
-        print(f"{rfx},{rfy}")
+        rfy = position[self.INDEX_Y]
+        srfy = rfy + offset[self.INDEX_Y] * cos(radians(rfang)) - offset[self.INDEX_X] * sin(radians(rfang))
         sns_l = snsWalls[0]
         sns_f = snsWalls[1]
         sns_r = snsWalls[2]
-        ix = round(rfx / self.__MAZE_GRID_SIZE)
-        iy = round(rfy / self.__MAZE_GRID_SIZE)
+        ix = floor(rfx / self.__MAZE_GRID_SIZE)
+        iy = floor(rfy / self.__MAZE_GRID_SIZE)
+        six = round(srfx / self.__MAZE_GRID_SIZE)
+        siy = round(srfy / self.__MAZE_GRID_SIZE)
         tmps = (None, None, None, None)
         if (315.0 < rfang and rfang <= 360.0) or (0.0 <= rfang and rfang < 45.0):
             # 北向き
@@ -324,31 +330,34 @@ class Maze:
         else:
             pass
         # walls_nse
-        return (ix, iy, tmps[0], tmps[1], tmps[2], tmps[3])
+        return (ix, iy, six, siy, tmps[0], tmps[1], tmps[2], tmps[3])
     
-    def readStep(self, position:tuple[float, float, float], offset:tuple[float, float]) -> tuple[int, int, int]:
+    def readStep(self, position:tuple[float, float, float]) -> tuple[int, int, int, int]:
         rfang = position[2]
         # 東向きの座標
-        rfx = position[self.INDEX_X] + offset[self.INDEX_X] * cos(radians(rfang)) + offset[self.INDEX_Y] * sin(radians(rfang))
+        rfx = position[self.INDEX_X]
         # 北向きの座標
-        rfy = position[self.INDEX_Y] + offset[self.INDEX_Y] * cos(radians(rfang)) - offset[self.INDEX_X] * sin(radians(rfang))
-        print(f"{rfx},{rfy}")
+        rfy = position[self.INDEX_Y]
+        # ix = floor(rfx / self.__MAZE_GRID_SIZE) + self.__MAZE_MIN_X
+        # iy = floor(rfy / self.__MAZE_GRID_SIZE) + self.__MAZE_MIN_Y
         ix = round(rfx / self.__MAZE_GRID_SIZE) + self.__MAZE_MIN_X
         iy = round(rfy / self.__MAZE_GRID_SIZE) + self.__MAZE_MIN_Y
-        tmps = (None, None, None)
+        tmps = (None, None, None, None)
+        nowstep = self.__MAZE_GRIDS[ix][iy].g_step
         if (315.0 < rfang and rfang <= 360.0) or (0.0 <= rfang and rfang < 45.0):
             # 北向き
             # def checkwall(  self, position_xy=tuple[int,int], walls_nsew:tuple[Optional[bool], Optional[bool],Optional[bool],Optional[bool]] = (None, None, None, None)):
-            tmps = (self.__MAZE_GRIDS[ix - 1][iy].g_step, self.__MAZE_GRIDS[ix][iy + 1].g_step, self.__MAZE_GRIDS[ix + 1][iy].g_step)
+            # tmps = (self.__MAZE_GRIDS[ix - 1][iy + 1].g_step, self.__MAZE_GRIDS[ix][iy + 1].g_step, self.__MAZE_GRIDS[ix + 1][iy + 1].g_step)
+            tmps = (nowstep, self.__MAZE_GRIDS[ix - 1][iy + 1].g_step, self.__MAZE_GRIDS[ix][iy + 1].g_step, self.__MAZE_GRIDS[ix + 1][iy + 1].g_step)
         elif (45.0 < rfang and rfang <= 135.0):
             # 東向き
-            tmps = (self.__MAZE_GRIDS[ix][iy + 1].g_step, self.__MAZE_GRIDS[ix + 1][iy].g_step, self.__MAZE_GRIDS[ix][iy - 1].g_step)
+            tmps = (nowstep, self.__MAZE_GRIDS[ix + 1][iy + 1].g_step, self.__MAZE_GRIDS[ix + 1][iy].g_step, self.__MAZE_GRIDS[ix + 1][iy - 1].g_step)
         elif (135.0 < rfang and rfang <= 215.0):
             # 南向き
-            tmps = (self.__MAZE_GRIDS[ix + 1][iy].g_step, self.__MAZE_GRIDS[ix][iy - 1].g_step, self.__MAZE_GRIDS[ix - 1][iy].g_step)
+            tmps = (nowstep, self.__MAZE_GRIDS[ix + 1][iy - 1].g_step, self.__MAZE_GRIDS[ix][iy -1].g_step, self.__MAZE_GRIDS[ix - 1][iy - 1].g_step)
         elif (215.0 < rfang and rfang <= 315.0):
             # 西向き
-            tmps = (self.__MAZE_GRIDS[ix][iy - 1].g_step, self.__MAZE_GRIDS[ix - 1][iy].g_step, self.__MAZE_GRIDS[ix][iy + 1].g_step)
+            tmps = (nowstep, self.__MAZE_GRIDS[ix - 1][iy - 1].g_step, self.__MAZE_GRIDS[ix - 1][iy].g_step, self.__MAZE_GRIDS[ix - 1][iy + 1].g_step)
         else:
             pass
         return tmps
