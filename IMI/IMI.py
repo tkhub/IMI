@@ -15,8 +15,12 @@ from libs.devices.wallsensors import wallsensors
 # TODO: センサの値を読み込んで走行する(走行＝左右の壁を判断して直線をしっかり走る。迷路情報により)
 # TODO: 迷路情報から経路を判断し、司令する。
 
+class Run:
+    def __init__(self) -> None:
+        self.MVMOTION = motion.motion()
+        self.WLSNS = wallsensors.wallsensors()
+        self.MAZE_SIZE : float = 180.0
 
-MAZE_SIZE : float = 180.0
 
 def main():
     uisw = _uisw.UISW()
@@ -42,7 +46,8 @@ def main():
     print("GO")
     UIBZ.play(1000,pauseLength=0.5)
     MVMOTION.start()
-    MVMOTION.run(speed_mmps=100, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+    sleep(0.05)
+    MVMOTION.run(speed_mmps=100, degrees = 0, length=MAZE_SIZE/2, continueFlag=False)
     sleep(10)
    #  MVMOTION.run(speed_mmps= 0, degrees = 90, runTime = 0.5, continueFlag=False)
     while True:
@@ -50,25 +55,29 @@ def main():
         # print(wsns)
         if wsns[1] == False:
             # 前が空いてる
-            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+            print("^")
+            MVMOTION.run(speed_mmps=150, degrees = 0, length=MAZE_SIZE, continueFlag=False)
         elif wsns[2] == False:
             # 右が空いてる
-            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
-            MVMOTION.run(speed_mmps=0, degrees = 90, runTIme=0.25, continueFlag=False)
+            print("->")
+            MVMOTION.run(speed_mmps=150, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+            MVMOTION.run(speed_mmps=0, degrees = 90, runTime=0.25, continueFlag=False)
         elif wsns[0] == False:
             # 左が空いてる
-            MVMOTION.run(speed_mmps=250, degrees = 0, length=MAZE_SIZE, continueFlag=False)
-            MVMOTION.run(speed_mmps=0, degrees = -90, runTIme=0.25, continueFlag=False)
+            print("<-")
+            MVMOTION.run(speed_mmps=150, degrees = 0, length=MAZE_SIZE, continueFlag=False)
+            MVMOTION.run(speed_mmps=0, degrees = -90, runTime=0.25, continueFlag=False)
         else:
             # Uターン
+            print("U")
             MVMOTION.run(speed_mmps=0, degrees = 180, runTime=0.5, continueFlag=False)
-        if  uisw.read(uisw.SW0) == True  and uisw.read(uisw.SW1) == True and uisw.read(uisw.SW2) == True :
+        if uisw.read(uisw.SW0) == True  and uisw.read(uisw.SW1) == True and uisw.read(uisw.SW2) == True :
             break
+    MVMOTION.stop()
     sleep(1)
     uisw.close()
     UILED.close()
     UIBZ.close()
-    MVMOTION = motion.motion()
     MVMOTION.close()
     WLSNS.close()
 

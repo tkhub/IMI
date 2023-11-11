@@ -65,12 +65,13 @@ class motion:
             # 超信地旋回モード：マスト=角度、時間情報
             # 180 * 3.14 / 0.5 / 180 / 87 / 2
             delta_v = (degrees/ runTime ) * self.__PI / 180 * self.__WIDTH / 2
-            print(delta_v)
             Vr = -delta_v
             Vl = delta_v
             self.__deg += degrees
             if 360.00 < self.__deg:
                 self.__deg = self.__deg - 360.00
+            if self.__deg < 0.0:
+                self.__deg = 360.0 + self.__deg
         elif (speed_mmps != None and (abs(self.__MINV) < abs(speed_mmps))) \
             and degrees != None:
             # lenghtのみ指定の場合、runTimeを求める
@@ -97,6 +98,8 @@ class motion:
                 self.__deg += degrees
                 if 360.00 < self.__deg:
                     self.__deg = self.__deg - 360.00
+                if self.__deg < 0.0:
+                    self.__deg = 360.0 + self.__deg
         else :
             Vr = 0
             Vl = 0
