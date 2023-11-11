@@ -6,10 +6,24 @@ from wallsensors import wallsensors
 def main():
     ws = wallsensors()
     cnt = 0
+    loopnum : int = 16
     while True:
         #print(ws.readRaw())
         # print(ws.readNormalized())
-        print(f"{cnt},{ws.read()}")
+        diff : float = 0
+        length : float = 0
+        deg : float = 0
+        for i in range(loopnum):
+            tmp = ws.read()
+            wallflg = tmp[:3]
+            diff += tmp[3]
+            length += tmp[4]
+            deg += tmp[5]
+
+        diff = diff / loopnum
+        length = length / loopnum
+        deg = deg / loopnum
+        print(f"{cnt},{wallflg}, {diff}, {length}, {deg}")
         time.sleep(0.5)
         cnt += 1
 

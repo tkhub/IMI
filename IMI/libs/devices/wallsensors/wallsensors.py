@@ -31,11 +31,13 @@ class wallsensors:
         self.__ir_led = wsnsled.WSNSLED()
         self.__ir_tr = mcp3xxx.MCP3XXX()
         # self.PARAM_FL = self.adjustparam(-0.0439,149.99,200)
-        self.PARAM_FL = self.adjustparam(-0.0440,145.99,200)
+        # self.PARAM_FL = self.adjustparam(-0.0440,145.99,200) +5mm
+        self.PARAM_FL = self.adjustparam(-0.0439,154.99,200)
         self.PARAM_LL = self.adjustparam(-0.102,138.34,200)
         self.PARAM_RR = self.adjustparam(-0.0955,123.38,200)
         # self.PARAM_FR = self.adjustparam(-0.0202,136.76,200)
-        self.PARAM_FR = self.adjustparam(-0.0202,135.76,200)
+        # self.PARAM_FR = self.adjustparam(-0.0202,135.76,200) +5mm
+        self.PARAM_FR = self.adjustparam(-0.0202,147.76,200)
         self.__cnstcnt += 1
 
     def __del__(self):
@@ -115,7 +117,6 @@ class wallsensors:
         length : float = 0.0
         degrees : float = 0.0
         snsval = self.readNormalized()
-        print(snsval)
         MAZESIZE : float = 180
         MOUSEW:float = 87 #95 - 8
         if snsval[1] == None and snsval[2] == None:
