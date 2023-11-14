@@ -32,12 +32,12 @@ class wallsensors:
         self.__ir_tr = mcp3xxx.MCP3XXX()
         # self.PARAM_FL = self.adjustparam(-0.0439,149.99,200)
         # self.PARAM_FL = self.adjustparam(-0.0440,145.99,200) +5mm
-        self.PARAM_FL = self.adjustparam(-0.0439,154.99,200)
-        self.PARAM_LL = self.adjustparam(-0.102,138.34,200)
-        self.PARAM_RR = self.adjustparam(-0.0955,123.38,200)
+        self.PARAM_FL = self.adjustparam(-0.0439,154.99,150)
+        self.PARAM_LL = self.adjustparam(-0.102,138.34, 200)
+        self.PARAM_RR = self.adjustparam(-0.0955,123.38, 220)
         # self.PARAM_FR = self.adjustparam(-0.0202,136.76,200)
         # self.PARAM_FR = self.adjustparam(-0.0202,135.76,200) +5mm
-        self.PARAM_FR = self.adjustparam(-0.0202,147.76,200)
+        self.PARAM_FR = self.adjustparam(-0.0202,147.76,150)
         self.__cnstcnt += 1
 
     def __del__(self):
@@ -121,7 +121,7 @@ class wallsensors:
         MOUSEW:float = 87 #95 - 8
         if snsval[1] == None and snsval[2] == None:
             # 左壁センサ 右壁センサどちらもしきい値より低い場合、左右の計測は諦める
-            diff = None
+            diff = 0.0 
         elif snsval[1] != None and snsval[2] == None:
             # 左壁センサのみ信用できる場合、左壁から求める
             #diff = (MOUSEW - MAZESIZE)/2 + snsval[1]
