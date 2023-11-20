@@ -20,10 +20,13 @@ from libs.app.maze import maze
 class Run:
     __cnstcnt:int = 0
     __X_GAIN = -0.3
-    __STHF_LEN = 83.0
-    __TURN_HFST_LEN = 89.0
-    __R_TRUN_ANGL = +87.5
-    __L_TRUN_ANGL = -87.5
+    __STHF_LEN = 90.0
+    # __TURN_HFST_LEN = 89.0
+    __TURN_HFST_LEN = 90.0
+    # __R_TRUN_ANGL = +87.5
+    # __L_TRUN_ANGL = -87.5
+    __R_TRUN_ANGL = +90.0
+    __L_TRUN_ANGL = -90.0
     __U_TRUN_ANGL = +180.0
     def __init__(self) -> None:
         self.MVMOTION = motion.motion()
@@ -47,9 +50,10 @@ class Run:
         for i in range(grids * 2 -1):
             wsns = self.WLSNS.read()
             adjust_deg = wsns[3] * self.__X_GAIN
-            print(adjust_deg)
             self.MVMOTION.run(speed_mmps=speed, degrees = adjust_deg, length=self.__STHF_LEN, continueFlag=True)
         self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.__STHF_LEN, continueFlag=contFlag)
+        if contFlag == False:
+            sleep(0.05)
         pos = self.MVMOTION.position()
         return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
 
@@ -102,6 +106,8 @@ def main():
     rx:float = 89.99
     ry:float = 89.99
     rdeg:float = 0.0
+    ix:int = 0
+    iy:int = 0
     offset_f = 89
     Fullmaze = maze.Maze(maze_size=(16,16), goal=(7,7))
     MRUN = Run()
@@ -122,7 +128,22 @@ def main():
     sleep(0.5)
     print("GO")
     UIBZ.play(1000,pauseLength=0.5)
-    MRUN.straight(speed=200, grids = 5, contFlag = False)
+    # mazeinfo = MRUN.straight_hf(speed=200, contFlag = False)
+    # for i in range(10):
+    #     MRUN.straight(speed=200, grids = 1, contFlag = True)
+    for i in range(8):
+        MRUN.r_turn(0.5)
+    
+    while True:
+        if uisw.read(uisw.SW0) == True:
+            break
+        sleep(0.01)
+    UIBZ.play(2000,pauseLength=1)
+    sleep(1)
+    for i in range(8):
+        MRUN.l_turn(0.5)
+    
+
     uisw.close()
     UILED.close()
     UIBZ.close()

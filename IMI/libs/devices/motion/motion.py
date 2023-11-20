@@ -14,7 +14,9 @@ class motion:
     __PI : float = math.pi      # [-]
     __MINV : float = 0.1        # [mm/s]
     __runTimeMIN : float = 0.01    # [sec]
-    __PARAM_ANGLE_GAIN:float = 1.1065
+    __PARAM_LENGTH_GAIN:float = 0.95
+    __PARAM_LENGTH_OFFSET:float = 0
+    __PARAM_ANGLE_GAIN:float = 1.05
     __PARAM_ANGLE_OFFSET:float = 0
     __x : float                 # [mm] 初期位置・方向での右
     __y : float                 # [mm] 初期位置・方向での左
@@ -54,63 +56,64 @@ class motion:
         # runTime = 
         # 200 / (48 * PI) * 400 = 530.79
         
-        errflg : bool = False
         # ユースケース1：超信地旋回 speed = 0, deg = x runTime = x
         # ユースケース2-1：スラローム speed = x, deg = x runTime = x
         # ユースケース2-2：直線 speed = x, deg = x length = x
-        degrees = degrees * self.__PARAM_ANGLE_GAIN + self.__PARAM_ANGLE_OFFSET
-        if (speed_mmps == None or (abs(speed_mmps) <= abs(self.__MINV))) \
-            and degrees != None \
-            and (runTime != None and (self.__runTimeMIN <= runTime)):
-            # 超信地旋回モード：マスト=角度、時間情報
-            # 180 * 3.14 / 0.5 / 180 / 87 / 2
-            delta_v = (degrees/ runTime ) * self.__PI / 180 * self.__WIDTH / 2
-            Vr = -delta_v
-            Vl = delta_v
-            self.__deg += degrees
-            if 360.00 < self.__deg:
-                self.__deg = self.__deg - 360.00
-            if self.__deg < 0.0:
-                self.__deg = 360.0 + self.__deg
-        elif (speed_mmps != None and (abs(self.__MINV) < abs(speed_mmps))) \
-            and degrees != None:
-            # lenghtのみ指定の場合、runTimeを求める
-            if length != None:
-                runTime = length / speed_mmps
-                cllength = length
-            if runTime != None and (self.__runTimeMIN <= runTime):
-            # runTimeのみ指定の場合、runTimeが妥当ならdeltaVを計算
-                delta_v = (degrees/ runTime ) * self.__PI / 180 * self.__WIDTH / 2
-                cllength = speed_mmps * runTime
-            else :
-                delta_v = 0
-
-            Vr = speed_mmps - delta_v
-            Vl = speed_mmps + delta_v
-            # 2Rsin(deg/2)
-            if abs(degrees) < abs(0.01):
-                self.__x += cllength * math.cos(math.radians(self.__deg))
-                self.__y += cllength * math.sin(math.radians(self.__deg))
-            else:
-                Lst = self.__WIDTH*(speed_mmps/delta_v) * math.sin(math.radians(degrees/2))
-                self.__x += Lst * math.cos(math.radians(degrees - self.__deg))
-                self.__y += Lst * math.sin(math.radians(degrees - self.__deg))
+        if degrees == None:
+            vr_pps = 0
+            vl_pps = 0
+        else:
+            adjd_degrees = degrees * self.__PARAM_ANGLE_GAIN + self.__PARAM_ANGLE_OFFSET
+            if (speed_mmps == None or (abs(speed_mmps) <= abs(self.__MINV))) \
+                and (runTime != None and (self.__runTimeMIN <= runTime)):
+                # 超信地旋回モード：マスト=角度、時間情報
+                # 180 * 3.14 / 0.5 / 180 / 87 / 2
+                delta_v = (adjd_degrees/ runTime ) * self.__PI / 180 * self.__WIDTH / 2
+                Vr = -delta_v
+                Vl = delta_v
                 self.__deg += degrees
                 if 360.00 < self.__deg:
                     self.__deg = self.__deg - 360.00
                 if self.__deg < 0.0:
                     self.__deg = 360.0 + self.__deg
-        else :
-            Vr = 0
-            Vl = 0
+            elif speed_mmps != None and (abs(self.__MINV) < abs(speed_mmps)):
+                # lenghtのみ指定の場合、runTimeを求める
+                if length != None:
+                    runTime = (length * self.__PARAM_LENGTH_GAIN + self.__PARAM_LENGTH_OFFSET)/ speed_mmps
+                    cllength = length
+                if runTime != None and (self.__runTimeMIN <= runTime):
+                # runTimeのみ指定の場合、runTimeが妥当ならdeltaVを計算
+                    delta_v = (adjd_degrees / runTime ) * self.__PI / 180 * self.__WIDTH / 2
+                    cllength = speed_mmps * runTime
+                else :
+                    delta_v = 0
 
-        vr_pps = (Vr / (self.__PI  * self.__WHEEL_D)) * self.__PPR
-        vl_pps = (Vl / (self.__PI  * self.__WHEEL_D)) * self.__PPR
-        self.md.run(int(vl_pps), int(vr_pps))
-        if runTime != None:
-            time.sleep(runTime)
-        if continueFlag == False:
-            self.md.run(int(0), int(0))
+                Vr = speed_mmps - delta_v
+                Vl = speed_mmps + delta_v
+                # 2Rsin(deg/2)
+                if abs(degrees) < abs(0.01):
+                    self.__x += cllength * math.cos(math.radians(self.__deg))
+                    self.__y += cllength * math.sin(math.radians(self.__deg))
+                else:
+                    Lst = self.__WIDTH*(speed_mmps/delta_v) * math.sin(math.radians(degrees/2))
+                    self.__x += Lst * math.cos(math.radians(degrees - self.__deg))
+                    self.__y += Lst * math.sin(math.radians(degrees - self.__deg))
+                    self.__deg += degrees
+                    if 360.00 < self.__deg:
+                        self.__deg = self.__deg - 360.00
+                    if self.__deg < 0.0:
+                        self.__deg = 360.0 + self.__deg
+            else :
+                Vr = 0
+                Vl = 0
+
+            vr_pps = (Vr / (self.__PI  * self.__WHEEL_D)) * self.__PPR
+            vl_pps = (Vl / (self.__PI  * self.__WHEEL_D)) * self.__PPR
+            self.md.run(int(vl_pps), int(vr_pps))
+            if runTime != None:
+                time.sleep(runTime)
+            if continueFlag == False:
+                self.md.run(int(0), int(0))
         return (vl_pps, vr_pps, runTime)
 
     def position(self) -> (float, float, float):
