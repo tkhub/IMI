@@ -111,6 +111,7 @@ def main():
     offset_f = 89
     Fullmaze = maze.Maze(maze_size=(16,16), goal=(7,7))
     MRUN = Run()
+    print("Push SW0")
     while True:
         if uisw.read(uisw.SW0) == True:
             break;
@@ -131,18 +132,37 @@ def main():
     # mazeinfo = MRUN.straight_hf(speed=200, contFlag = False)
     # for i in range(10):
     #     MRUN.straight(speed=200, grids = 1, contFlag = True)
-    for i in range(8):
-        MRUN.r_turn(0.5)
+    # for i in range(8):
+    #     MRUN.r_turn(0.5)
     
+    # while True:
+    #     if uisw.read(uisw.SW0) == True:
+    #         break
+    #     sleep(0.01)
+    # UIBZ.play(2000,pauseLength=1)
+    # sleep(1)
+    # for i in range(8):
+    #     MRUN.l_turn(0.5)
+    MRUN.straight_hf(200,True)
+    walls = wallsensors.wallsensors()
+    rslt = walls.read()
+    print(rslt)
     while True:
-        if uisw.read(uisw.SW0) == True:
-            break
-        sleep(0.01)
-    UIBZ.play(2000,pauseLength=1)
-    sleep(1)
-    for i in range(8):
-        MRUN.l_turn(0.5)
-    
+        if rslt[2] == False:
+            MRUN.straight_hf(200,True)
+            MRUN.r_turn(0.25)
+            MRUN.straight_hf(200,True)
+        elif rslt[1] == False:
+            MRUN.straight(200,1 ,True)
+        elif rslt[0] == False:
+            MRUN.straight_hf(200,True)
+            MRUN.l_turn(0.25)
+            MRUN.straight_hf(200,True)
+        else:
+            MRUN.u_turn(200)
+        print(rslt)
+        rslt = walls.read()
+
 
     uisw.close()
     UILED.close()
