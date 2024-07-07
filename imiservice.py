@@ -1,9 +1,10 @@
 import threading
 from queue import Queue
 from time import sleep
+from typing import Optional
 from IMI.libs.devices.driver import uiled as UILED
 from IMI.libs.devices.driver import uisw as UISW
-from IMI.libs.app 
+from IMI.libs.devices.wallsensors import wallsensors as WSNS
 
 queue_man2machine = Queue()
 queue_machine2man = Queue()
@@ -12,20 +13,30 @@ killFlag:bool = False
 
 def sensor_loop():
     global killFlag
+    wallsnss = WSNS.wallsensors()
     print(f"sensor loop = {threading.Thread.name}")
-    cnt = 0
+    wss : tuple[Optional[bool], Optional[bool], Optional[bool], Optional[float], Optional[float], Optional[float]] \
+        = (None, None, None, None, None, None)
     while not killFlag:
-        queue_sensor.put(cnt)
-        cnt = cnt + 1
-        sleep(0.1)
+        wss = wallsnss.read()
+        queue_sensor.put(wss)
+        sleep(0.01)
+    print(f"sensor loop end = {threading.Thread.name}")
 
-# def run_loop():
-#     global killFlag
-#     print(f"run loop = {threading.Thread.name}")
+def run_loop():
+    global killFlag
+    print(f"run loop = {threading.Thread.name}")
+    runmode : bool = False
+    uisws : tuple[Optional[None], Optional[None], Optional[None]] = (None, None, None)
+    while not killFlag:
+        print(queue_sensor.get())
+        # if not queue_machine2man.empty():
+        #     uisws = queue_man2machine.get()
+        # else:
+        #     uisws = (None, None, None)
+        sleep(0.05)
 
-#     while not killFlag:
-#         if not queue_machine2man.empty():
-#             uisws = queue_man2machine.get()
+    print(f"run loop end = {threading.Thread.name}")
 
         
 
@@ -41,7 +52,6 @@ def ui_loop():
         if uisws_old != uisws:
             queue_man2machine.put(uisws)
         uisws_old = uisws
-        print(f"main loop cnt = {queue_sensor.get()}")
         sleep(0.5)
         if  uisws == (True, True, True):
             print("END")
@@ -50,14 +60,18 @@ def ui_loop():
     sleep(1)
     uisw.close()
     uiled.close()
+    print(f"ui loop end = {threading.Thread.name}")
 
 def main():
     print(f"main = {threading.Thread.name}")
     uiThread = threading.Thread(target=ui_loop, daemon=True)
     sensorThread = threading.Thread(target=sensor_loop, daemon=True)
-    sensorThread.start()
+    runThread = threading.Thread(target=run_loop, daemon=True)
     uiThread.start()
+    sensorThread.start()
+    runThread.start()
     uiThread.join()
+    runThread.join()
     sensorThread.join()
 
 if __name__ == "__main__":

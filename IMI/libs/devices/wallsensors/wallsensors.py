@@ -2,6 +2,7 @@ import time
 import sys
 import os
 import math
+from typing import Optional
 sys.path.append('../driver')
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
@@ -49,7 +50,7 @@ class wallsensors:
     def close(self):
         self.__del__()
 
-    def readRaw(self) -> (float, float, float, float):
+    def readRaw(self) -> tuple[float, float, float, float]:
         #          Q4↖    ↗Q3         
         #          CH0       CH3        
         #          D12       D6         
@@ -111,7 +112,7 @@ class wallsensors:
         return  (self.PARAM_FL.normalize(snsval[0]),self.PARAM_LL.normalize(snsval[1]), self.PARAM_RR.normalize(snsval[2]),self.PARAM_FR.normalize(snsval[3]))
     
 
-    def read(self) -> (bool, bool, bool, float, float, float):
+    def read(self) -> tuple[Optional[bool], Optional[bool], Optional[bool], Optional[float], Optional[float], Optional[float]]:
         # 前、左右、傾きのズレ
         diff : float = 0.0
         length : float = 0.0
