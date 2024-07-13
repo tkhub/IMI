@@ -1,33 +1,45 @@
+# Standard Library
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from time import sleep
+# from time import sleep
+import time
+from typing import Optional
+
+# Third Party Library
+
+# Third Party Library
 from IMI.libs.devices.driver import uiled as UILED
 from IMI.libs.devices.driver import uisw as UISW
-from IMI.libs.app 
+from IMI.libs.devices.wallsensors import wallsensors as WSNS
 
 queue_man2machine = Queue()
 queue_machine2man = Queue()
 queue_sensor = Queue()
+queue_move = Queue()
 killFlag:bool = False
 
 def sensor_loop():
     global killFlag
-    print(f"sensor loop = {threading.Thread.name}")
-    cnt = 0
+
+    wallsnss = WSNS.wallsensors()
+    # print(f"sensor loop = {threading.Thread.name}")
+    wss : tuple[Optional[bool], Optional[bool], Optional[bool], Optional[float], Optional[float], Optional[float]] \
+        = (None, None, None, None, None, None)
     while not killFlag:
-        queue_sensor.put(cnt)
-        cnt = cnt + 1
-        sleep(0.1)
-
-# def run_loop():
-#     global killFlag
-#     print(f"run loop = {threading.Thread.name}")
-
-#     while not killFlag:
-#         if not queue_machine2man.empty():
-#             uisws = queue_man2machine.get()
-
-        
+        wst = wallsnss.read()
+        wss = ( time.perf_counter_ns(), \
+                wst[0], \
+                wst[1], \
+                wst[2], \
+                wst[3], \
+                wst[4], \
+                wst[5] 
+            )
+        queue_sensor.put(wss, block=False)
+        time.sleep(0.01)
+    wallsnss.close()
+    # print(f"sensor loop end = {threading.Thread.name}")
 
 def ui_loop():
     global killFlag
@@ -35,30 +47,39 @@ def ui_loop():
     uiled = UILED.UILED()
     uisws = (False, False, False)
     uisws_old:tuple[bool, bool, bool] = (False, False, False)
-    print(f"ui loop = {threading.Thread.name}")
+    uisws_old2:tuple[bool, bool, bool] = (False, False, False)
+    # print(f"ui loop = {threading.Thread.name}")
     while True:
         uisws = (uisw.read(uisw.SW0), uisw.read(uisw.SW1), uisw.read(uisw.SW2))
+        print(queue_sensor.get())
         if uisws_old != uisws:
             queue_man2machine.put(uisws)
         uisws_old = uisws
-        print(f"main loop cnt = {queue_sensor.get()}")
-        sleep(0.5)
+        time.sleep(0.5)
         if  uisws == (True, True, True):
             print("END")
             killFlag = True
             break
-    sleep(1)
+    time.sleep(1)
     uisw.close()
     uiled.close()
+    # print(f"ui loop end = {threading.Thread.name}")
 
 def main():
-    print(f"main = {threading.Thread.name}")
-    uiThread = threading.Thread(target=ui_loop, daemon=True)
-    sensorThread = threading.Thread(target=sensor_loop, daemon=True)
-    sensorThread.start()
-    uiThread.start()
-    uiThread.join()
-    sensorThread.join()
+    # print(f"main = {threading.Thread.name}")
+    # uiThread = threading.Thread(target=ui_loop, daemon=True)
+    # sensorThread = threading.Thread(target=sensor_loop, daemon=True)
+    # # runThread = threading.Thread(target=run_loop, daemon=True)
+    # uiThread.start()
+    # sensorThread.start()
+    # # runThread.start()
+    # uiThread.join()
+    # # runThread.join()
+    # sensorThread.join()
+    with ThreadPoolExecutor() as executor:
+        uiExec = executor.submit(ui_loop)
+        sensorExec = executor.submit(sensor_loop)
+
 
 if __name__ == "__main__":
     main()

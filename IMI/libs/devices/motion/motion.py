@@ -2,6 +2,7 @@ import time
 import os
 import sys
 import math
+from typing import Tuple
 # sys.path.append('../')
 # import driver.motors 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
@@ -49,7 +50,7 @@ class motion:
     def pause(self):
         self.md.run(0,0)
     
-    def run(self, speed_mmps:float = None, degrees:float = None, length :float = None, runTime:float = None, continueFlag:bool = True) -> (float, float,float):
+    def run(self, speed_mmps:float = None, degrees:float = None, length :float = None, runTime:float = None, continueFlag:bool = True) -> Tuple[float, float,float]:
         # omega = (Vr - Vl) / WIDTH
         # v = (Vr + Vl) / 2
         # deg = omega * runTime
@@ -127,4 +128,82 @@ class motion:
         if deg != None:
             self.__deg == deg
         pass
+
+    class grid:
+        __X_GAIN = -0.3
+        __STHF_LEN = 90.0
+        __TURN_HFST_LEN = 90.0
+        __R_TRUN_ANGL = +90.0
+        __L_TRUN_ANGL = -90.0
+        __U_TRUN_ANGL = +180.0
+
+    def __init__(self) -> None:
+        self.MVMOTION = motion.motion()
+        self.WLSNS = wallsensors.wallsensors()
+        self.MAZE_SIZE : float = 180.0
+        self.__cnstcnt  += 1
+        self.MVMOTION.start()
     
+    def __del__(self):
+        self.close()
+    
+    def close(self):
+        if 0 < self.__cnstcnt:
+            self.MVMOTION.stop()
+            self.MVMOTION.close()
+            self.WLSNS.close()
+
+    def straight(self, speed:float, grids:int, contFlag:bool = True):
+        adjust_deg:float = 0
+        wsns = (False, False, False, 0.0, 0.0, 0.0)
+        for i in range(grids * 2 -1):
+            wsns = self.WLSNS.read()
+            adjust_deg = wsns[3] * self.__X_GAIN
+            self.MVMOTION.run(speed_mmps=speed, degrees = adjust_deg, length=self.__STHF_LEN, continueFlag=True)
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.__STHF_LEN, continueFlag=contFlag)
+        if contFlag == False:
+            sleep(0.05)
+        pos = self.MVMOTION.position()
+        return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
+
+    def straight_hf(self, speed:float,contFlag:bool = True):
+        wsns = self.WLSNS.read()
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.__STHF_LEN, continueFlag=contFlag)
+        pos = self.MVMOTION.position()
+        return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
+
+    def left(self, speed:float):
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.__TURN_HFST_LEN, continueFlag=False)
+        sleep(0.1)
+        self.MVMOTION.run(speed_mmps=speed, degrees = self.__L_TRUN_ANGL, runTime=0.5, continueFlag=False)
+        sleep(0.1)
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.MAZE_SIZE/2, continueFlag=False)
+        wsns = self.WLSNS.read()
+        pos = self.MVMOTION.position()
+        return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
+
+    def right(self, speed:float):
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.MAZE_SIZE/2, continueFlag=False)
+        sleep(0.1)
+        self.MVMOTION.run(speed_mmps=speed, degrees = self.__R_TRUN_ANGL, runTime=0.5, continueFlag=False)
+        sleep(0.1)
+        self.MVMOTION.run(speed_mmps=speed, degrees = 0, length=self.MAZE_SIZE/2, continueFlag=False)
+        wsns = self.WLSNS.read()
+        pos = self.MVMOTION.position()
+        return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
+
+    def u_turn(self, speed:float):
+        self.MVMOTION.run(speed_mmps=speed, degrees = self.__U_TRUN_ANGL, runTime=1.5, continueFlag=False)
+        self.MVMOTION.run(speed_mmps=-speed, degrees = 0, length=self.MAZE_SIZE/2, continueFlag=False)
+        wsns = self.WLSNS.read()
+        pos = self.MVMOTION.position()
+        return (wsns[0], wsns[1],wsns[2],wsns[3],wsns[4],wsns[5], pos[0], pos[1], pos[2])
+
+    def l_turn(self, mtime:float = 1.0):
+        self.MVMOTION.run(speed_mmps=0, degrees = self.__L_TRUN_ANGL, runTime=mtime, continueFlag=False)
+        sleep(0.5)
+
+    def r_turn(self, mtime:float = 1.0):
+        self.MVMOTION.run(speed_mmps=0, degrees = self.__R_TRUN_ANGL, runTime=mtime, continueFlag=False)
+        sleep(0.5)
+
