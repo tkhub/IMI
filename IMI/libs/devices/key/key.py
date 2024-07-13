@@ -227,6 +227,7 @@ class Key:
                     self.__ent_fLong = False
                     self.__ent_SwState = self._SwSt._WAIT_HIGH
 
+        # 全押し
         if self.__fexit:
             self.__fexit = False
             return UISWCmd.EXIT_PUSH
