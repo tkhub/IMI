@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 # from rpi_hardware_pwm import HardwarePWM
 import pigpio
 
-class MOTOR:
+class MOTORS:
     __EN_PIN : int    = 5
     __R_DIR_PIN :int  = 6
     __L_DIR_PIN : int = 16
@@ -16,6 +16,7 @@ class MOTOR:
     __STOP_DUTY : int = 100
     __START_DUTY : int = 50
     __DEFAULT_FRQ : int = 1000
+    __cnstcnt : int = 0
     def __init__(self) -> None:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.__EN_PIN, GPIO.OUT)
@@ -27,22 +28,21 @@ class MOTOR:
         # self.__R_PLS = HardwarePWM(pwm_channel=self.__R_PLS_CH, hz=100)
         self.__PIGPIO.hardware_PWM(self.__L_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
         self.__PIGPIO.hardware_PWM(self.__R_PLS_PIN, self.__DEFAULT_FRQ, int(self.__STOP_DUTY*self.__PIGPIOPWM_DUTYGAIN))
-        self.__L_STATE:bool = False
-        self.__R_STATE:bool = False
+        self.__cnstcnt += 1
         # self.__L_PLS.start(100)
         # self.__R_PLS.start(100)
 
     def __del__(self):
-        GPIO.cleanup(self.__EN_PIN)
-        GPIO.cleanup(self.__L_DIR_PIN)
-        GPIO.cleanup(self.__R_DIR_PIN)
-        self.__PIGPIO.stop()
-        # self.__L_PLS.stop()
-        # self.__R_PLS.stop()
+            self.stop()
+            GPIO.cleanup(self.__EN_PIN)
+            GPIO.cleanup(self.__L_DIR_PIN)
+            GPIO.cleanup(self.__R_DIR_PIN)
+            self.__cnstcnt -= 1
     
     def close(self):
+        self.stop()
         self.__del__()
-    
+
     def start(self):
         GPIO.output(self.__EN_PIN, True)
 
