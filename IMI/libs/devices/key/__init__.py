@@ -1,1 +1,1 @@
-from key import key
+from . import key

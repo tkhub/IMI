@@ -1,8 +1,7 @@
 # Standard Library
-import threading
 from concurrent.futures import ThreadPoolExecutor
+import signal
 from queue import Queue
-# from time import sleep
 import time
 from typing import Optional
 
@@ -12,12 +11,16 @@ from typing import Optional
 from IMI.libs.devices.driver import uiled as UILED
 from IMI.libs.devices.driver import uisw as UISW
 from IMI.libs.devices.wallsensors import wallsensors as WSNS
+from IMI.libs.devices.key import key as UIKEY
 
 queue_man2machine = Queue()
 queue_machine2man = Queue()
 queue_sensor = Queue()
 queue_move = Queue()
 killFlag:bool = False
+
+def handler(signum, frame):
+    print(f"Signal handler called with signal {signum}.")
 
 def sensor_loop():
     global killFlag
@@ -43,43 +46,40 @@ def sensor_loop():
 
 def ui_loop():
     global killFlag
-    uisw = UISW.UISW()
-    uiled = UILED.UILED()
-    uisws = (False, False, False)
-    uisws_old:tuple[bool, bool, bool] = (False, False, False)
-    uisws_old2:tuple[bool, bool, bool] = (False, False, False)
-    # print(f"ui loop = {threading.Thread.name}")
+    
+    uikey = UIKEY.Key()
+    uiled = UILED()
+    cnt = 0
     while True:
-        uisws = (uisw.read(uisw.SW0), uisw.read(uisw.SW1), uisw.read(uisw.SW2))
+        keyinput = uikey.detector()
         print(queue_sensor.get())
-        if uisws_old != uisws:
-            queue_man2machine.put(uisws)
-        uisws_old = uisws
-        time.sleep(0.5)
-        if  uisws == (True, True, True):
+        # if keyinput != UIKEY.UISWCmd.NON_SW_EVNT:
+        print(keyinput)
+        time.sleep(0.05)
+        if keyinput == UIKEY.UISWCmd.EXIT_PUSH:
             print("END")
             killFlag = True
+        if killFlag:
             break
+
     time.sleep(1)
-    uisw.close()
+    uikey.close()
     uiled.close()
-    # print(f"ui loop end = {threading.Thread.name}")
 
 def main():
-    # print(f"main = {threading.Thread.name}")
-    # uiThread = threading.Thread(target=ui_loop, daemon=True)
-    # sensorThread = threading.Thread(target=sensor_loop, daemon=True)
-    # # runThread = threading.Thread(target=run_loop, daemon=True)
-    # uiThread.start()
-    # sensorThread.start()
-    # # runThread.start()
-    # uiThread.join()
-    # # runThread.join()
-    # sensorThread.join()
-    with ThreadPoolExecutor() as executor:
-        uiExec = executor.submit(ui_loop)
-        sensorExec = executor.submit(sensor_loop)
+    global killFlag
+    UIKey = UIKEY.Key()
+    try:
+        while True:
+            SW = UIKey.detector() 
+            if SW != UIKEY.UISWCmd.NON_SW_EVNT:
+                print(f"return\t= {SW}")
+            time.sleep(0.05)
 
+    except KeyboardInterrupt:
+        print("Ctrl + C is Input")
+    finally:
+        UIKey.close()
 
 if __name__ == "__main__":
     main()
