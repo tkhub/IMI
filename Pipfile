@@ -7,6 +7,8 @@ name = "pypi"
 spidev = "*"
 "rpi.gpio" = "*"
 pigpio = "*"
+pillow = "*"
+adafruit-circuitpython-ssd1306 = "*"
 
 [dev-packages]
 

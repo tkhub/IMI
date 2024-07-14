@@ -4,6 +4,7 @@ import threading
 from queue import Queue
 from time import sleep, clock_gettime
 
+from IMI.uisystem import UiSystem
 from IMI.libs.devices.key import key as UIKey
 
 queue_man2machine = Queue()
