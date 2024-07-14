@@ -1,5 +1,6 @@
 # Standard Library
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 import signal
 from queue import Queue
 import time
@@ -66,20 +67,58 @@ def ui_loop():
     uikey.close()
     uiled.close()
 
+def testproc_0():
+    global killFlag
+    for i in range (100):
+        print(f"{time.clock_gettime(0)}:test proc 0 cnt = {i}")
+        if killFlag:
+            print("KILL SIG!!")
+            break
+        time.sleep(0.5)
+
 def main():
     global killFlag
-    UIKey = UIKEY.Key()
-    try:
-        while True:
-            SW = UIKey.detector() 
-            if SW != UIKEY.UISWCmd.NON_SW_EVNT:
-                print(f"return\t= {SW}")
-            time.sleep(0.05)
-
+    # UIKey = UIKEY.Key()
+    
+    try :
+        with ProcessPoolExecutor() as mltexec:
+            futuers = []
+            futuer = mltexec.submit(testproc_0)
+            futuers.append(futuer)
     except KeyboardInterrupt:
-        print("Ctrl + C is Input")
-    finally:
-        UIKey.close()
+        print("!!!!Ctrl + C!!!!")
+        mltexec.shutdown(wait=False, cancel_futures=True)
+        for ifuture in futuers:
+            print("cancel...")
+            ifuture.cancel()
+
+
+    # with ProcessPoolExecutor() as me:
+    #     futuers = []
+    #     futuer = me.submit(testproc_0)
+    #     futuers.append(futuer)
+    #     time.sleep(5)
+    #     for lfutuer in futuers:
+    #         # lfutuer.cancel()
+    #         lfutuer.shutdown()
+    #     # try:
+    #     #     # while True:
+    #     #     #     SW = UIKey.detector() 
+    #     #     #     if SW != UIKEY.UISWCmd.NON_SW_EVNT:
+    #     #     #         print(f"return\t= {SW}")
+    #     #     #     elif SW == UIKEY.UISWCmd.EXIT_PUSH:
+    #     #     #         killFlag = True
+
+    #     #     #     print("Exit")
+    #     #     #     time.sleep(0.05)
+
+    #     # except KeyboardInterrupt:
+    #     #     print("Ctrl + C is Input")
+    #     #     killFlag = True
+    #     # finally:
+    #     #     time.sleep(1)
+    #     #     UIKey.close()
+    #     #     print("END ALL....")
 
 if __name__ == "__main__":
     main()
