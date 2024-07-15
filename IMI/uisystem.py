@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from time import clock_gettime, sleep
 
 from PIL import Image
 from PIL import ImageDraw
@@ -32,6 +32,7 @@ class UiSystem:
         self.__DRAW = ImageDraw.Draw(img)
         self.__DRAW.rectangle((0, 0, 128, 64), outline=255, fill=255)
         self.__FONT = ImageFont.load_default()
+        print(clock_gettime(0))
         text = "Hello World!"
         bbox = self.__FONT.getbbox(text)
         (font_width, font_height) = bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -41,6 +42,11 @@ class UiSystem:
             font=self.__FONT,
             fill=0,
         )
+        self.__DSP.image(img)
+        self.__DSP.show()
+        print(clock_gettime(0))
+        sleep(5)
+        self.__DRAW.rectangle((0, 0, 128, 64), outline=0, fill=0)
         self.__DSP.image(img)
         self.__DSP.show()
         self.__testcnt = 0
