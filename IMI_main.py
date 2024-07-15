@@ -6,6 +6,7 @@ from time import sleep, clock_gettime
 
 from IMI.uisystem import UiSystem
 from IMI.libs.devices.key import key as UIKey
+from IMI.libs.devices.sound import sound as UISound
 
 queue_man2machine = Queue()
 
@@ -72,12 +73,14 @@ def main():
 
         try:
             uikeys = UIKey.Key()
+            uisound = UISound.Sound()
             while not exiting.is_set():
                 keycmd = uikeys.detector()
                 if keycmd != UIKey.UISWCmd.NON_SW_EVNT:
                     if keycmd == UIKey.UISWCmd.EXIT_PUSH:
                         print("!!! EXIT !!!")
                         exiting.set()
+                        uisound.play(uisound.Pattern.CANCEL_0)
                     else:
                         print(f"enqueue = {keycmd}")
                         queue_man2machine.put_nowait(keycmd)
@@ -87,6 +90,7 @@ def main():
             exiting.set()
         finally:
             uikeys.close()
+            uisound.close()
     print("Main thread finished (and thus all others)")
 
 
