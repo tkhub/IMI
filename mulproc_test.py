@@ -1,17 +1,35 @@
 from concurrent.futures import ThreadPoolExecutor
 import signal
 import threading
-from time import sleep
+from time import sleep, clock_gettime
+from queue import Queue
 
-def loop_worker(exiting):
+testq = Queue(maxsize=1)
+
+def loop_worker1(exiting):
+    cnt:int = 0
     while not exiting.is_set():
         try:
-            print("started work")
-            sleep(10)
-            print("finished work")
+            if not testq.full():
+                testq.put((clock_gettime(0), cnt))
+            else:
+                print("full")
+            cnt += 1
+            sleep(0.1)
         except KeyboardInterrupt:
             print("caught keyboardinterrupt")  # never caught here. just for demonstration purposes
 
+def loop_worker2(exiting):
+    while not exiting.is_set():
+        try:
+            if not testq.empty():
+                # print(f"t = {clock_gettime(0)} sensor = {testq.get_nowait()}")
+                print(f"t = {clock_gettime(0)} sensor = {testq.get()}")
+            else:
+                print("empty")
+            sleep(0.5)
+        except KeyboardInterrupt:
+            print("caught keyboardinterrupt")  # never caught here. just for demonstration purposes
 
 def loop_in_worker():
     exiting = threading.Event()
@@ -20,8 +38,9 @@ def loop_in_worker():
         exiting.set()
 
     signal.signal(signal.SIGTERM, signal_handler)
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        executor.submit(loop_worker, exiting)
+    with ThreadPoolExecutor() as executor:
+        executor.submit(loop_worker1, exiting)
+        executor.submit(loop_worker2, exiting)
 
         try:
             while not exiting.is_set():
