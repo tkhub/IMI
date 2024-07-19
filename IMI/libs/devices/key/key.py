@@ -91,8 +91,9 @@ class Key:
         self.__cnstcnt += 1
     
     def __del__(self):
-        self.__UISW.close()
-        self.__cnstcnt -= 1
+        if  self.__cnstcnt > 0:
+            self.__UISW.close()
+            self.__cnstcnt -= 1
     
     def close(self):
         self.__del__()
