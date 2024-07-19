@@ -24,14 +24,20 @@ def main():
             time = None
         elif time != None:
             time = float(time)
-        length = input("length. time[mm] = ")
+        length = input("opt. length [mm] = ")
         if length == str(''):
             length = None
         elif length!= None:
             length = float(length)
+
+        radius = input("opt. radius [mm] = ")
+        if radius == str(''):
+            radius = None
+        elif radius != None:
+            radius = float(radius)
+
         input("Press Any Key...")
-        print(mti.run(speed_mmps=speed, degrees=degrees, runTime=time, length=length,continueFlag=False))
-        print(mti.position())
+        print(mti.run(speed_mmps=speed, degrees=degrees, length=length,runperiod=time,radius=radius,continueFlag=False))
         if degrees == None:
             print("Exit")
             break;
