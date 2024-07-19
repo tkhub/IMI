@@ -18,7 +18,8 @@ class wallsensors:
             self.gain = g
             self.offset = o
             self.threshold = t
-        def normalize(self, snsval:float) -> float:
+
+        def normalize(self, snsval:float) -> Optional[float]:
             if snsval < self.threshold:
                 return None
             else:
@@ -108,21 +109,24 @@ class wallsensors:
         return (FL, LL, RR, FR)
 
     def readNormalized(self):
-        snsval : float = self.readRaw()
+        snsval : tuple[float, float, float, float] = self.readRaw()
         return  (self.PARAM_FL.normalize(snsval[0]),self.PARAM_LL.normalize(snsval[1]), self.PARAM_RR.normalize(snsval[2]),self.PARAM_FR.normalize(snsval[3]))
     
+    def read(self) -> tuple[Optional[bool], Optional[bool], Optional[bool], float, Optional[float], Optional[float]]:
+        """_summary_
 
-    def read(self) -> tuple[Optional[bool], Optional[bool], Optional[bool], Optional[float], Optional[float], Optional[float]]:
-        # 前、左右、傾きのズレ
+        Returns:
+            tuple[Optional[bool], Optional[bool], Optional[bool], float, Optional[float], Optional[float]]: 左壁の有無, 前壁の有無, 右壁の有無, ズレ、前壁との距離, 傾き
+        """        # 前、左右、傾きのズレ
         diff : float = 0.0
-        length : float = 0.0
-        degrees : float = 0.0
+        length : Optional[float] = 0.0
+        degrees : Optional[float] = 0.0
         snsval = self.readNormalized()
         MAZESIZE : float = 180
         MOUSEW:float = 87 #95 - 8
-        if snsval[1] == None and snsval[2] == None:
-            # 左壁センサ 右壁センサどちらもしきい値より低い場合、左右の計測は諦める
-            diff = 0.0 
+        if snsval[1] != None and snsval[2] != None:
+            # 左右の壁の差からズレを算出する
+            diff =  snsval[1] - snsval[2]
         elif snsval[1] != None and snsval[2] == None:
             # 左壁センサのみ信用できる場合、左壁から求める
             #diff = (MOUSEW - MAZESIZE)/2 + snsval[1]
@@ -134,7 +138,8 @@ class wallsensors:
             # diff = (MOUSEW - MAZESIZE)/2 - snsval[2]
             diff = (MAZESIZE)/2 - snsval[2]
         else :
-            diff =  snsval[1] - snsval[2]
+            # 左壁センサ 右壁センサどちらもしきい値より低い場合、左右の計測は諦める
+            diff = 0.0 
 
         if snsval[0] == None or snsval[3] == None:
             length = None
