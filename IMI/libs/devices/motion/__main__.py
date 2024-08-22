@@ -3,7 +3,7 @@ from motion import *
 import time
 
 def main():
-    mti= motion()
+    mti= runmotion()
     mti.start()
     while True:
         # ユースケース1：超信地旋回 speed = 0, deg = x time = x

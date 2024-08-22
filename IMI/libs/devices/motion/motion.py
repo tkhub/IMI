@@ -11,7 +11,7 @@ from typing_extensions import runtime
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 from driver.motors import motors
 
-class motion:
+class runmotion:
     class __PARAM:
         class SPIN:
             GAIN:float = 0.95

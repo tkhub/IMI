@@ -11,6 +11,9 @@ import adafruit_ssd1306
 # from libs.devices.key import key as UiKeys
 # from libs.devices.driver.uiled import uiled as UiLEDs
 
+class Job(Enum):
+    pass
+
 
 class UiSystem:
 
@@ -64,4 +67,4 @@ class UiSystem:
         
         self.__testcnt += 1
 
-    
+
