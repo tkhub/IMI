@@ -1,0 +1,11 @@
+[Unit]
+Description=Boot Up IMI3
+After=pigpiod.service
+
+[Service]
+Type=simple
+ExecStart=/home/imai/Prog/Project/ROBO/IMI/IMI/imi_boot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
