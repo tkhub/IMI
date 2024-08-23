@@ -34,6 +34,7 @@ BOOTPY_PATH="${SCRIPT_DIR}/${BOOTPY_NAME}"
 PYTHON_BIN="${SCRIPT_DIR}/.venv/bin/python"
 
 #### MAIN PY SETTING
+MAIN_PY_USER='imai'
 MAINPY_NAME="imi_main.py"
 MAINPY_PATH="${SCRIPT_DIR}/${MAINPY_NAME}"
 
@@ -63,7 +64,7 @@ if [ $return_boot_py -ne 0 ]; then
     echo $EXEITLOG >> $LOGFILE_PATH
 else
     echo "#### EXEC MAIN ####" >> $LOGFILE_PATH
-    $PYTHON_BIN $MAINPY_PATH
+    sudo -u $MAIN_PY_USER $PYTHON_BIN $MAINPY_PATH
     TIMESTMPE=$(date "+%Y/%m/%d-%H:%M:%S")
     MNEXEITLOG="#### IMI SERVICE END (${TIMESTMPE}) ####"
     echo $MNEXEITLOG>> $LOGFILE_PATH
