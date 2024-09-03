@@ -1,10 +1,7 @@
 import RPi.GPIO as GPIO
+import pigpio
 
 class WSNSLED:
-    # LED3 RAS4 GPIO22
-    # LED2 RAS5 GPIO23
-    # LED1 RAS6 GPIO24
-    # LED0 RAS7 GPIO25
     LED_RR = 22
     LED_LL = 4
     LED_FR = 27
@@ -12,20 +9,26 @@ class WSNSLED:
     WLED_ON = True
     WLED_OFF = False
     __constcnt = 0
+    __pi:pigpio.pi
     def __init__(self) -> None:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.LED_RR, GPIO.OUT)
-        GPIO.setup(self.LED_LL, GPIO.OUT)
-        GPIO.setup(self.LED_FR, GPIO.OUT)
-        GPIO.setup(self.LED_FL, GPIO.OUT)
+        self.__pi = pigpio.pi()
+        self.__pi.set_mode(self.LED_FL, pigpio.OUTPUT)
+        self.__pi.set_mode(self.LED_FR, pigpio.OUTPUT)
+        self.__pi.set_mode(self.LED_LL, pigpio.OUTPUT)
+        self.__pi.set_mode(self.LED_RR, pigpio.OUTPUT)
+        self.__pi.write(self.LED_FL, pigpio.LOW)
+        self.__pi.write(self.LED_FR, pigpio.LOW)
+        self.__pi.write(self.LED_LL, pigpio.LOW)
+        self.__pi.write(self.LED_RR, pigpio.LOW)
         self.__constcnt += 1
     
     def __del__(self):
         if 0 < self.__constcnt:
-            GPIO.cleanup(self.LED_RR)
-            GPIO.cleanup(self.LED_LL)
-            GPIO.cleanup(self.LED_FR)
-            GPIO.cleanup(self.LED_FL)
+            self.__pi.write(self.LED_FL, pigpio.LOW)
+            self.__pi.write(self.LED_FR, pigpio.LOW)
+            self.__pi.write(self.LED_LL, pigpio.LOW)
+            self.__pi.write(self.LED_RR, pigpio.LOW)
+            self.__pi.stop()
             self.__constcnt -= 1
     
     def close(self):
@@ -33,6 +36,8 @@ class WSNSLED:
 
     def write(self, ledch:int, level:bool) -> bool:
         if level == self.WLED_ON:
-            GPIO.output(ledch, True)
+            self.__pi.write(ledch, pigpio.HIGH)
+            return True
         else :
-            GPIO.output(ledch, False)
+            self.__pi.write(ledch, pigpio.LOW)
+            return False
