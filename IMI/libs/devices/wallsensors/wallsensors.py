@@ -3,11 +3,15 @@ import sys
 import os
 import math
 from typing import Optional
+from enum import Enum, IntEnum
 sys.path.append('../driver')
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-import driver.mcp3xxx as mcp3xxx
-import driver.wsnsled as wsnsled
+# import driver.mcp3xxx as mcp3xxx
+# import driver.wsnsled as wsnsled
+# from IMI.libs.devices.driver import mcp3xxx
+from driver.mcp3xxx.mcp3xxx import MCP3xxx as ADC
+from driver.wsnsled.wsnsled import WSNSLED as WLED
 
 class wallsensors:
     class adjustparam:
@@ -25,13 +29,20 @@ class wallsensors:
             else:
                 return snsval * self.gain + self.offset
             
-
+    class SNSCH(IntEnum):
+        FL = 1
+        FR = 2
+        RR = 3
+        LL = 0
     __cnstcnt :int = 0
     __ON_WAIT_TIME = 0.005
     __OFF_WAIT_TIME = 0.005
     def __init__(self) -> None:
-        self.__ir_led = wsnsled.WSNSLED()
-        self.__ir_tr = mcp3xxx.MCP3XXX()
+        # self.__ir_led = wsnsled.WSNSLED()
+        # self.__ir_tr = mcp3xxx.MCP3XXX()
+        self.__ir_tr = ADC(spichannel=ADC.SPIchannel.CH_0, speed=50000, bit_10_12=ADC.resolution.BIT_12, chnum=ADC.ChannelNum.CH_8)
+        self.__ir_led = WLED()
+
         # self.PARAM_FL = self.adjustparam(-0.0439,149.99,200)
         # self.PARAM_FL = self.adjustparam(-0.0440,145.99,200) +5mm
         self.PARAM_FL = self.adjustparam(-0.0439,154.99,150)
@@ -72,39 +83,39 @@ class wallsensors:
 
         # FL check
         time.sleep(self.__OFF_WAIT_TIME)
-        FL = self.__ir_tr.read(self.__ir_tr.FL)
+        FL = self.__ir_tr.read(self.SNSCH.FL)
         self.__ir_led.write(self.__ir_led.LED_FL, self.__ir_led.WLED_ON)
         self.__ir_led.write(self.__ir_led.LED_LL, self.__ir_led.WLED_ON)
         time.sleep(self.__ON_WAIT_TIME)
-        FL = self.__ir_tr.read(self.__ir_tr.FL) - FL
+        FL = self.__ir_tr.read(self.SNSCH.FL) - FL
         self.__ir_led.write(self.__ir_led.LED_FL, self.__ir_led.WLED_OFF)
         self.__ir_led.write(self.__ir_led.LED_LL, self.__ir_led.WLED_OFF)
 
         # RR check
         time.sleep(self.__OFF_WAIT_TIME)
-        RR = self.__ir_tr.read(self.__ir_tr.RR)
+        RR = self.__ir_tr.read(self.SNSCH.RR)
         self.__ir_led.write(self.__ir_led.LED_RR, self.__ir_led.WLED_ON)
         time.sleep(self.__ON_WAIT_TIME)
-        RR = self.__ir_tr.read(self.__ir_tr.RR) - RR
+        RR = self.__ir_tr.read(self.SNSCH.RR) - RR
         self.__ir_led.write(self.__ir_led.LED_RR, self.__ir_led.WLED_OFF)
 
 
         # FR
         time.sleep(self.__OFF_WAIT_TIME)
-        FR = self.__ir_tr.read(self.__ir_tr.FR)
+        FR = self.__ir_tr.read(self.SNSCH.FR)
         self.__ir_led.write(self.__ir_led.LED_FR, self.__ir_led.WLED_ON)
         self.__ir_led.write(self.__ir_led.LED_RR, self.__ir_led.WLED_ON)
         time.sleep(self.__ON_WAIT_TIME)
-        FR = self.__ir_tr.read(self.__ir_tr.FR) - FR
+        FR = self.__ir_tr.read(self.SNSCH.FR) - FR
         self.__ir_led.write(self.__ir_led.LED_FR, self.__ir_led.WLED_OFF)
         self.__ir_led.write(self.__ir_led.LED_RR, self.__ir_led.WLED_OFF)
 
         # LL check
         time.sleep(self.__OFF_WAIT_TIME)
-        LL = self.__ir_tr.read(self.__ir_tr.LL)
+        LL = self.__ir_tr.read(self.SNSCH.LL)
         self.__ir_led.write(self.__ir_led.LED_LL, self.__ir_led.WLED_ON)
         time.sleep(self.__ON_WAIT_TIME)
-        LL = self.__ir_tr.read(self.__ir_tr.LL) - LL
+        LL = self.__ir_tr.read(self.SNSCH.LL) - LL
         self.__ir_led.write(self.__ir_led.LED_LL, self.__ir_led.WLED_OFF)
         return (FL, LL, RR, FR)
 

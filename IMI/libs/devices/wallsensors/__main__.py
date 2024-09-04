@@ -13,7 +13,7 @@ def main():
         diff : float = 0
         length : float = 0
         deg : float = 0
-        print(ws.read())
+        raw = ws.read()
         for i in range(loopnum):
             tmp = ws.read()
             wallflg = tmp[:3]
@@ -27,7 +27,7 @@ def main():
         diff = diff / loopnum
         length = length / loopnum
         deg = deg / loopnum
-        print(f"{cnt},{wallflg}, {diff}, {length}, {deg}")
+        print(f"{raw}:{cnt},{wallflg}, {diff}, {length}, {deg}")
         time.sleep(0.5)
         cnt += 1
 
