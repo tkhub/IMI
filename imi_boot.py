@@ -14,10 +14,13 @@ import pigpio
 IMISW0_PIN = 20
 IMISW1_PIN = 26
 IMISW2_PIN = 21
-IMILED0_PIN = 18
-IMILED1_PIN = 23
-IMILED2_PIN = 24
-IMILED3_PIN = 25
+
+IMILED3_PIN = 18
+IMILED2_PIN = 23
+IMILED1_PIN = 24
+IMILED0_PIN = 25
+
+SOUND_PIN = 19
 
 def lanip_getstr(ifname:str) -> str:
     iflist = netifaces.interfaces()
@@ -112,6 +115,11 @@ class Display:
 
 def main() -> bool:
     bootst:bool = False
+    SOUND_STOPDT = 255
+    SOUND_PLAYDT = 128
+    SOUND_HTONE = 1760
+    SOUND_MIDTONE = 660
+    SOUND_LOWTONE = 220
     I2C_ADDR = 0x3C
     displaysize:tuple[int, int] = (128,64)
     pi = pigpio.pi()
@@ -131,6 +139,13 @@ def main() -> bool:
     pi.write(IMILED3_PIN, pigpio.LOW)
     oled = Display(address=I2C_ADDR, displaysize_width_height=displaysize)
     oled.bootmesg("rpmouse.local", lanip_getstr('eth0'), lanip_getstr('wlan0'))
+    pi.set_PWM_dutycycle(SOUND_PIN, SOUND_PLAYDT)
+    pi.set_PWM_frequency(SOUND_PIN, SOUND_LOWTONE)
+    sleep(0.25)
+    pi.set_PWM_frequency(SOUND_PIN, SOUND_MIDTONE)
+    sleep(0.25)
+    pi.set_PWM_frequency(SOUND_PIN, SOUND_HTONE)
+    pi.set_PWM_dutycycle(SOUND_PIN, SOUND_STOPDT)
     imisw0:bool
     imisw1:bool
     imisw2:bool
@@ -155,45 +170,62 @@ def main() -> bool:
             oled.bootmesg("rpmouse.local", lanip_getstr('eth0'), lanip_getstr('wlan0'))
             f_screenOn = True
             screenUpdateTime = time()
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_PLAYDT)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_MIDTONE)
+            sleep(0.1)
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_STOPDT)
         elif    (f_screenOn) and \
                 (not imisw0 and imisw1 and not imisw2):
             oled.exitmesg(True)
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_PLAYDT)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_LOWTONE)
+            sleep(0.1)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_MIDTONE)
             pi.write(IMILED0_PIN, pigpio.HIGH)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
             pi.write(IMILED3_PIN, pigpio.LOW)
             sleep(0.1)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_HTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.HIGH)
             pi.write(IMILED2_PIN, pigpio.LOW)
             pi.write(IMILED3_PIN, pigpio.LOW)
             sleep(0.1)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_LOWTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.HIGH)
             pi.write(IMILED3_PIN, pigpio.LOW)
             sleep(0.1)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_MIDTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
             pi.write(IMILED3_PIN, pigpio.HIGH)
             sleep(0.1)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_HTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
             pi.write(IMILED3_PIN, pigpio.LOW)
+            sleep(0.1)
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_STOPDT)
             oled.screenoff()
             bootst = True
             break
 
         elif not imisw0 and not imisw1 and not imisw2:
             oled.exitmesg(False)
-            sleep(0.5)
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_PLAYDT)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_HTONE)
+            sleep(0.1)
             pi.write(IMILED0_PIN, pigpio.HIGH)
             pi.write(IMILED1_PIN, pigpio.HIGH)
             pi.write(IMILED2_PIN, pigpio.HIGH)
             pi.write(IMILED3_PIN, pigpio.HIGH)
             sleep(0.05)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_LOWTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
@@ -204,6 +236,7 @@ def main() -> bool:
             pi.write(IMILED2_PIN, pigpio.HIGH)
             pi.write(IMILED3_PIN, pigpio.HIGH)
             sleep(0.05)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_HTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
@@ -214,11 +247,13 @@ def main() -> bool:
             pi.write(IMILED2_PIN, pigpio.HIGH)
             pi.write(IMILED3_PIN, pigpio.HIGH)
             sleep(0.05)
+            pi.set_PWM_frequency(SOUND_PIN, SOUND_LOWTONE)
             pi.write(IMILED0_PIN, pigpio.LOW)
             pi.write(IMILED1_PIN, pigpio.LOW)
             pi.write(IMILED2_PIN, pigpio.LOW)
             pi.write(IMILED3_PIN, pigpio.LOW)
             sleep(0.1)
+            pi.set_PWM_dutycycle(SOUND_PIN, SOUND_STOPDT)
             oled.screenoff()
             bootst = False
             break

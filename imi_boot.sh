@@ -21,7 +21,7 @@ LOGFILE_NAME="imilog.txt"
 LOGDIR_NAME="log"
 LOGFILE_PATH="${SCRIPT_DIR}/${LOGDIR_NAME}/${LOGFILE_NAME}"
 TIMESTMPS=$(date "+%Y/%m/%d-%H:%M:%S")
-LOGSTART="#### BOOT UP START (${TIMESTMPS}) ####"
+LOGSTART="${TIMESTMPS} #### BOOT UP START ####"
 #### LOG SETTING END
 if [ ! -f $LOGFILE_PATH ]; then
     touch $LOGFILE_PATH
@@ -47,7 +47,7 @@ return_boot_py=$?
 
 # LOG BOOT PY
 TIMESTMPE=$(date "+%Y/%m/%d-%H:%M:%S")
-LOGEND="#### BOOT UP END (${TIMESTMPE}) ####"
+LOGEND="${TIMESTMPE}: #### BOOT UP END ####"
 echo $LOGEND >> $LOGFILE_PATH
 
 ## LOCK FILE DELETE
@@ -60,13 +60,13 @@ if [ $return_boot_py -ne 0 ]; then
     echo "#### EXIT ALL ####" >> $LOGFILE_PATH
     # LOG EXIT 
     TIMESTMPE=$(date "+%Y/%m/%d-%H:%M:%S")
-    EXEITLOG="#### IMI SERVICE END (${TIMESTMPE}) ####"
+    EXEITLOG="${TIMESTMPE}: #### IMI SERVICE END ####"
     echo $EXEITLOG >> $LOGFILE_PATH
 else
     echo "#### EXEC MAIN ####" >> $LOGFILE_PATH
     sudo -u $MAIN_PY_USER $PYTHON_BIN $MAINPY_PATH
     TIMESTMPE=$(date "+%Y/%m/%d-%H:%M:%S")
-    MNEXEITLOG="#### IMI SERVICE END (${TIMESTMPE}) ####"
+    MNEXEITLOG="${TIMESTMPE}: #### IMI SERVICE END ####"
     echo $MNEXEITLOG>> $LOGFILE_PATH
 fi
 
