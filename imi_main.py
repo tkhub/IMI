@@ -4,15 +4,18 @@ from time import sleep, clock_gettime_ns
 import signal
 import sys
 from threading import Thread, Event
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, Queue
 
 
 import pigpio
 
+from IMI.imimessage import JOB, ExecJob, RunCmd, SoundPattern
+from IMI.runcommander import commandSetter
+from IMI.uisystem import JobControler, Sound
+from IMI.libs.devices.wallsensors.wallsensors import wallsensors
 from IMI.libs.devices.key.key import KeyEvent, UISWNAME, UISWSTATE
 
-
-
+### Thread ###
 def testThreadLoop(id:int, stop_event:Event) -> None:
     try:
         testThreadLoopCnt:int = 0
@@ -25,26 +28,8 @@ def testThreadLoop(id:int, stop_event:Event) -> None:
     finally:
         print("test Thread END")
 
-# # センサーの監視関数 (センサーIDを引数に取る)
-# def sensor_monitor(sensor_id: int, stop_event: Event) -> None:
-#     try:
-#         while not stop_event.is_set():  # stop_eventがセットされるまでループ
-#             print(f"センサー {sensor_id} を監視しています...")
-#             time.sleep(1)
-#     except KeyboardInterrupt:
-#         pass
-#     print(f"センサースレッド {sensor_id} を停止します")
 
-# モーターの制御関数 (モーターIDを引数に取る)
-# def motor_control(motor_id: int, stop_event: multiprocessing.Event) -> None:
-#     try:
-#         while not stop_event.is_set():  # stop_eventがセットされるまでループ
-#             print(f"モーター {motor_id} を制御しています...")
-#             time.sleep(1)
-#     except KeyboardInterrupt:
-#         pass
-#     print(f"モータープロセス {motor_id} を停止します")
-
+### Multiprocess ###
 def testProcessLoop(id:int, mp_stop_event:Event) -> None:
     try:
         print(f"id = {id}")
@@ -57,6 +42,32 @@ def testProcessLoop(id:int, mp_stop_event:Event) -> None:
         print("test Process Keyboard Interrupt")
     finally:
         print("test Process END")
+
+def runLoop(pi, mp_stop_event:Event, jobQ:Queue) -> None:
+    try:
+        print("runLoop")
+        testProcessLoopCnt:int = 0
+        while not mp_stop_event.is_set():
+            if not jobQ.empty():
+                print(f"Test Loop:{testProcessLoopCnt}, main = {jobQ.get()}")
+                testProcessLoopCnt += 1
+            sleep(0.01)
+    except KeyboardInterrupt:
+        print("test Process Keyboard Interrupt")
+    finally:
+        print("test Process END")
+
+
+def soundLoop(sound:Sound, mp_stop_event:Event, soundQ:Queue) -> None:
+    try:
+        while not mp_stop_event.is_set():
+            if not soundQ.empty():
+                sound.play(soundQ.get())
+    except KeyboardInterrupt:
+        print("sound Thread Keyboard Interrupt")
+    finally:
+        print("sound Thread END")
+
 
 # Ctrl+Cで全てのスレッド/プロセスを正常終了させるためのシグナルハンドラ
 def signal_handler(sig: int, frame, stop_event: Event, mp_stop_event:Event) -> None:
@@ -72,29 +83,26 @@ def main():
         mp_stop_event = manager.Event()  # プロセス間で共有する終了イベント
         imipi = pigpio.pi()
         UIKeyE = KeyEvent(imipi)
-        # センサーIDとモーターID
-        sensor_id: int = 1
-        motor_id: int = 1
-        display_id: int = 1
-        speaker_id: int = 1
-
-        # センサー監視とディスプレイ制御、スピーカー制御のスレッドを作成
-        # display_thread: Thread = threading.Thread(target=display_control, args=(display_id, stop_event))
-        # speaker_thread: Thread = threading.Thread(target=speaker_control, args=(speaker_id, stop_event))
+        sound = Sound(imipi)
+        job2CmdQ = Queue()
+        soundQ = Queue(maxsize=64)
+        mainCnt:int = 0
+        # スレッド
         test_thread: Thread = threading.Thread(target=testThreadLoop, args=(1, stop_event))
+        sound_thread: Thread = threading.Thread(target=soundLoop, args=(sound, stop_event, soundQ))
+        
 
-        # モーター制御のプロセスを作成
-        # motor_process: Process = multiprocessing.Process(target=motor_control, args=(motor_id, mp_stop_event))
-        test_process: Process = multiprocessing.Process(target=testProcessLoop, args=(motor_id, mp_stop_event))
+        # プロセス
+        test_process: Process = multiprocessing.Process(target=testProcessLoop, args=(2, mp_stop_event))
+        runLoop_process: Process = multiprocessing.Process(target=runLoop, args=(imipi, mp_stop_event, job2CmdQ))
 
         # スレッドを開始
-        # display_thread.start()
-        # speaker_thread.start()
         test_thread.start()
+        sound_thread.start()
 
         # プロセスを開始
-        # motor_process.start()
         test_process.start()
+        runLoop_process.start()
 
         # シグナルハンドラを設定
         signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, stop_event, mp_stop_event))
@@ -103,39 +111,28 @@ def main():
         try:
             while not stop_event.is_set():
                 update, exitf, swstate = UIKeyE.detector() 
-                # user_input = input("コマンドを入力してください (q で終了): ").strip()
-                # if user_input == 'q':
-                #     print("終了コマンドを受け取りました...")
-                #     stop_event.set()  # スレッドの停止を指示
-                #     mp_stop_event.set()  # プロセスの停止を指示
-                # elif user_input == 's':
-                #     print("スイッチを操作しました。")
-                #     # ここにスイッチ入力に対する処理を追加可能
-                # else:
-                #     print(f"無効な入力: {user_input}")
                 if exitf:
                     print("####EXIT####")
                     stop_event.set()  # スレッドの停止を指示
                     mp_stop_event.set()  # プロセスの停止を指示
                 elif update:
                     print(f"{swstate}")
+                    job2CmdQ.put(mainCnt)
+                    soundQ.put(SoundPattern.OK_0)
                 else:
-                    sleep(0.01)
+                    sleep(0.025)
+                mainCnt += 1
         except KeyboardInterrupt:
             print("\nKeyboardInterruptが発生しました。")
             stop_event.set()
             mp_stop_event.set()
         finally:
 
-            # スレッドが終了するのを待機
-            # sensor_thread.join()
-            # display_thread.join()
-            # speaker_thread.join()
             test_thread.join()
+            sound_thread.join()
 
-            # プロセスが終了するのを待機
-            # motor_process.join()
             test_process.join()
+            runLoop_process.join()
 
             print("すべてのスレッドとプロセスが正常に停止しました。")
             UIKeyE.close()

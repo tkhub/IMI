@@ -392,8 +392,10 @@ class KeyEvent:
             self.__sel_sw_onoff = False
             self.__sel_fall_time = tick
     
+    def __clearSwState(self, nowT:int,  raiseT:int, raiseLastT:int, fallT:int, fallLastT:int) -> tuple[bool, UISWSTATE, int, int]:
+        pass
     # 通常の制御周期で過去のスイッチエッジ履歴から判定する。判定済みかどうかはこの時点では考えない。
-    def __swState(self, onoff:bool, nowT:int,  raiseT:int, raiseLastT:int, fallT:int, fallLastT:int) -> tuple[bool, UISWSTATE, int, int]:
+    def __setSwState(self, onoff:bool, nowT:int,  raiseT:int, raiseLastT:int, fallT:int, fallLastT:int) -> tuple[bool, UISWSTATE, int, int]:
     
         onEdgeTiming = pigpio.tickDiff(raiseT, nowT)
         offEdgeTiming = pigpio.tickDiff(fallT, nowT)
@@ -428,25 +430,25 @@ class KeyEvent:
         update:bool = False
         
         esconoff, escSwSt,self.__esc_raise_time_bck, self.__esc_fall_time_bck = \
-                                            self.__swState( onoff=self.__esc_sw_onoff,
-                                                            nowT=self.__KEYPI.get_current_tick(),
-                                                            raiseT=self.__esc_raise_time, raiseLastT=self.__esc_raise_time_bck,
-                                                            fallT=self.__esc_fall_time, fallLastT=self.__esc_fall_time_bck)
+                                            self.__setSwState(  onoff=self.__esc_sw_onoff,
+                                                                nowT=self.__KEYPI.get_current_tick(),
+                                                                raiseT=self.__esc_raise_time, raiseLastT=self.__esc_raise_time_bck,
+                                                                fallT=self.__esc_fall_time, fallLastT=self.__esc_fall_time_bck)
 
         selonoff, selSwSt,self.__sel_raise_time_bck, self.__sel_fall_time_bck  = \
-                                            self.__swState( onoff=self.__sel_sw_onoff,
-                                                            nowT=self.__KEYPI.get_current_tick(),
-                                                            raiseT=self.__sel_raise_time, raiseLastT=self.__sel_raise_time_bck,
-                                                            fallT=self.__sel_fall_time, fallLastT=self.__sel_fall_time_bck)
+                                            self.__setSwState(  onoff=self.__sel_sw_onoff,
+                                                                nowT=self.__KEYPI.get_current_tick(),
+                                                                raiseT=self.__sel_raise_time, raiseLastT=self.__sel_raise_time_bck,
+                                                                fallT=self.__sel_fall_time, fallLastT=self.__sel_fall_time_bck)
 
         entonoff, entSwSt,self.__ent_raise_time_bck, self.__ent_fall_time_bck  = \
-                                            self.__swState( onoff=self.__ent_sw_onoff,
-                                                            nowT=self.__KEYPI.get_current_tick(),
-                                                            raiseT=self.__ent_raise_time, raiseLastT=self.__ent_raise_time_bck,
-                                                            fallT=self.__ent_fall_time, fallLastT=self.__ent_fall_time_bck)
+                                            self.__setSwState(  onoff=self.__ent_sw_onoff,
+                                                                nowT=self.__KEYPI.get_current_tick(),
+                                                                raiseT=self.__ent_raise_time, raiseLastT=self.__ent_raise_time_bck,
+                                                                fallT=self.__ent_fall_time, fallLastT=self.__ent_fall_time_bck)
         # print(f"{self.__esc_raise_time}/{self.__esc_fall_time}, {self.__sel_raise_time}/{self.__sel_fall_time}, {self.__ent_raise_time}/{self.__ent_fall_time}")
         update = (escSwSt is not UISWSTATE.NON) or (selSwSt is not UISWSTATE.NON) or (entSwSt is not UISWSTATE.NON)
-        rtnStDict = {UISWNAME.ESCAPE:escSwSt, UISWNAME.SELECT:selSwSt, UISWNAME.ENTER:entSwSt}
+        # EXITの処理
         match self.__exitStateBF:
             case self.__ExitState.INIT:
                 if not esconoff and not selonoff and not entonoff:
@@ -456,40 +458,54 @@ class KeyEvent:
                     self.__exitStateBF = self.__ExitState.WAIT_PRESS
                     exitflg = False
             case self.__ExitState.WAIT_PRESS:
+                # 押し込んだら離されるのを待つ
                 if escSwSt == UISWSTATE.PRESS:
                     self.__escExitStateBF = UISWSTATE.PRESS
+                # EXITへ遷移されてないのに離されたら無効
                 elif escSwSt == UISWSTATE.PUSH or escSwSt == UISWSTATE.RELEASE:
                     self.__escExitStateBF = UISWSTATE.RELEASE
 
+                # 押し込んだら離されるのを待つ
                 if selSwSt == UISWSTATE.PRESS:
                     self.__selExitStateBF = UISWSTATE.PRESS
+                # EXITへ遷移されてないのに離されたら無効
                 elif selSwSt == UISWSTATE.PUSH or selSwSt == UISWSTATE.RELEASE:
                     self.__selExitStateBF = UISWSTATE.RELEASE
 
+                # 押し込んだら離されるのを待つ
                 if entSwSt == UISWSTATE.PRESS:
                     self.__entExitStateBF = UISWSTATE.PRESS
+                # EXITへ遷移されてないのに離されたら無効
                 elif entSwSt == UISWSTATE.PUSH or entSwSt == UISWSTATE.RELEASE:
                     self.__entExitStateBF = UISWSTATE.RELEASE
 
+                # EXIT判定に入る
                 if  self.__escExitStateBF == UISWSTATE.PRESS and \
                     self.__selExitStateBF == UISWSTATE.PRESS and \
                     self.__entExitStateBF == UISWSTATE.PRESS:
                     self.__exitStateBF = self.__ExitState.WAIT_RELEASE
                     exitflg = False
             case self.__ExitState.WAIT_RELEASE:
-                if escSwSt == UISWSTATE.PUSH or escSwSt == UISWSTATE.RELEASE:
+                if  escSwSt == UISWSTATE.RELEASE:
                     self.__escExitStateBF = UISWSTATE.RELEASE
-                if selSwSt == UISWSTATE.PUSH or selSwSt == UISWSTATE.RELEASE:
+                if selSwSt == UISWSTATE.RELEASE:
                     self.__selExitStateBF = UISWSTATE.RELEASE
-                if entSwSt == UISWSTATE.PUSH or entSwSt == UISWSTATE.RELEASE:
+                if entSwSt == UISWSTATE.RELEASE:
                     self.__entExitStateBF = UISWSTATE.RELEASE
 
                 if  self.__escExitStateBF == UISWSTATE.RELEASE and \
                     self.__selExitStateBF == UISWSTATE.RELEASE and \
                     self.__entExitStateBF == UISWSTATE.RELEASE:
                     exitflg = True 
-                    self.__exitStateBF = self.__ExitState.WAIT_PRESS
-        return update, exitflg,rtnStDict 
+                    self.__exitStateBF = self.__ExitState.INIT
+            case _:
+                    self.__exitStateBF = self.__ExitState.INIT
+
+        if self.__exitStateBF == self.__ExitState.WAIT_RELEASE:
+            rtnStDict = {UISWNAME.ESCAPE:UISWSTATE.NON, UISWNAME.SELECT:UISWSTATE.NON, UISWNAME.ENTER:UISWSTATE.NON}
+        else:
+            rtnStDict = {UISWNAME.ESCAPE:escSwSt, UISWNAME.SELECT:selSwSt, UISWNAME.ENTER:entSwSt}
+        return update, exitflg, rtnStDict 
 
 
 
