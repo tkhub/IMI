@@ -10,8 +10,8 @@ class WSNSLED:
     WLED_OFF = False
     __constcnt = 0
     __pi:pigpio.pi
-    def __init__(self) -> None:
-        self.__pi = pigpio.pi()
+    def __init__(self, pi:pigpio.pi) -> None:
+        self.__pi = pi
         self.__pi.set_mode(self.LED_FL, pigpio.OUTPUT)
         self.__pi.set_mode(self.LED_FR, pigpio.OUTPUT)
         self.__pi.set_mode(self.LED_LL, pigpio.OUTPUT)
@@ -28,7 +28,6 @@ class WSNSLED:
             self.__pi.write(self.LED_FR, pigpio.LOW)
             self.__pi.write(self.LED_LL, pigpio.LOW)
             self.__pi.write(self.LED_RR, pigpio.LOW)
-            self.__pi.stop()
             self.__constcnt -= 1
     
     def close(self):

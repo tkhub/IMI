@@ -1,4 +1,6 @@
+from optparse import Option
 import time
+from typing import Optional
 import pigpio
 
 class UIBZ:
@@ -9,8 +11,9 @@ class UIBZ:
     __STOP_DUTY_VAL = 255
     __PLAY_DUTY_VAL = 128
     __cnstcnt : int = 0
-    def __init__(self) -> None:
-        self.__PIGPIO = pigpio.pi()
+    __PIGPIO:pigpio.pi
+    def __init__(self, pi:pigpio.pi) -> None:
+        self.__PIGPIO = pi
         self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
         self.__PIGPIO.set_PWM_frequency(self.__PIN, 1000)
         self.__cnstcnt += 1
@@ -24,7 +27,7 @@ class UIBZ:
     def close(self):
         self.__del__()
 
-    def play(self, freq:int = 0, playLength:float = None, pauseLength:float = None):
+    def play(self, freq:int = 0, playLength:Optional[float] = None, pauseLength:Optional[float] = None):
         if self.__MAX_HZ < freq:
             freq = self.__MAX_HZ
         if freq < self.__MIN_HZ:
@@ -33,8 +36,13 @@ class UIBZ:
             self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__PLAY_DUTY_VAL)
             self.__PIGPIO.set_PWM_frequency(self.__PIN, freq)
 
-        if playLength != None:
+        if playLength is None:
+            # 連続音なので何もしないまま抜ける
+            pass
+        else:
+            # 長さが決まっているのでスリープ
             time.sleep(playLength)
-        if pauseLength!= None:
-            time.sleep(pauseLength)
-            self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
+            if pauseLength is not None:
+                self.__PIGPIO.set_PWM_dutycycle(self.__PIN, self.__STOP_DUTY_VAL)
+                if pauseLength > 0.01:
+                    time.sleep(pauseLength)

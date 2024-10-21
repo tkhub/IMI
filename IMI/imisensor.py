@@ -3,17 +3,19 @@ import os, sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 from .imimessage import IMISensorsDict
 from .libs.devices.wallsensors import wallsensors
+import pigpio
 
 class IMISensor:
     
     __WALL:wallsensors.wallsensors
     __cnstcnt:int = 0
-    def __init__(self) -> None:
-        self.__WALL = wallsensors.wallsensors()
+    def __init__(self, pi:pigpio.pi) -> None:
+        self.__WALL = wallsensors.wallsensors(pi)
         self.__cnstcnt += 1
 
     def __del__(self):
         if 0 < self.__cnstcnt:
+            self.__WALL.close()
             self.__cnstcnt -= 1
 
     def close(self):

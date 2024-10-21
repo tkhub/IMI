@@ -5,6 +5,7 @@ class Maze:
     class Grid:
         position_x:int
         position_y:int
+        f_reach:bool
         n_wall:Optional[bool]
         w_wall:Optional[bool]
         e_wall:Optional[bool]
@@ -98,6 +99,7 @@ class Maze:
                 # ゴールのステップ数を入れる
                 if self.__isGoal((x,y)):
                     grid.g_step = 0
+                grid.f_reach = False
                 grid.goal_way = self.Grid.WayFinding.NOWAY
         # スタート地点の壁
         self.__MAZE_GRIDS[self.__MAZE_MIN_X][self.__MAZE_MIN_Y].n_wall = False
@@ -106,7 +108,7 @@ class Maze:
         self.__MAZE_GRIDS[self.__MAZE_MIN_X + 1][self.__MAZE_MIN_Y].e_wall = True
         self.__MAZE_GRIDS[self.__MAZE_MIN_X][self.__MAZE_MIN_Y].goal_way = self.Grid.WayFinding.NORTH
     
-    def __isGoal(self, position:(int,int)) -> bool:
+    def __isGoal(self, position:tuple[int,int]) -> bool:
         if      (   self.__GOAL_POSITION_X == position[self.INDEX_X] - self.__MAZE_MIN_X \
             or      self.__GOAL_POSITION_X == (position[self.INDEX_X] - self.__MAZE_MIN_X + self.__GOAL_SIZE_X - 1)) \
             and (   self.__GOAL_POSITION_Y == position[self.INDEX_Y] - self.__MAZE_MIN_Y \

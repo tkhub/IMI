@@ -1,19 +1,26 @@
 import key
+import pigpio
 from time import sleep
 
 def main():
-    UIKey = key.Key()
+    testpi = pigpio.pi()
+    # UIKey = key.KeyPolling(pi = testpi)
+    UIKeyE = key.KeyEvent(pi = testpi)
     try:
         while True:
-            SW = UIKey.detector() 
-            if SW != key.UISWCmd.NON_SW_EVNT:
-                print(f"return\t= {SW}")
-            sleep(0.05)
+            update, exitf, swstate = UIKeyE.detector() 
+            if update:
+                if not exitf:
+                    print(f"state = {swstate}")
+                else:
+                    print("EXIT")
+            sleep(0.01)
 
     except KeyboardInterrupt:
         print("Ctrl + C is Input")
     finally:
-        UIKey.close()
+        # UIKey.close()
+        UIKeyE.close()
 
 if __name__ == '__main__':
     main()

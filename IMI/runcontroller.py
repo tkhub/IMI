@@ -1,4 +1,3 @@
-import imp
 import sys
 import os
 from enum import Enum, auto
@@ -7,6 +6,8 @@ from typing import Optional
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 from .imimessage import RunCmd
 from .libs.devices.motion.motion import runmotion
+
+# class 
 
 class RunExecutor:
     class __PARAMETER:
@@ -45,6 +46,9 @@ class RunExecutor:
 
     def close(self):
         self.__MOTION.close()
+
+    # def nanndemo():
+
 
     def move(   self, speed:float, motion:Optional[RunCmd] = None, \
                 position:tuple[float, float, float] = (0,0,0),\

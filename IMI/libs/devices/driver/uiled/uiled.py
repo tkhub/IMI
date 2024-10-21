@@ -1,5 +1,5 @@
 import RPi.GPIO as GPIO
-
+# TODO:pigpioにしたい
 class UILED:
     # LED3 RAS4 GPIO22
     # LED2 RAS5 GPIO23

@@ -1,3 +1,5 @@
+# TODO:付き当てモーションを加える
+# TODO:直進、カーブ、Uターンをチェックする
 import time
 import os
 import sys

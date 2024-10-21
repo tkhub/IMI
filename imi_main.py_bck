@@ -1,0 +1,292 @@
+import cmd
+import os
+from queue import Queue
+import sys
+import signal
+from typing import Optional
+from xml.etree.ElementTree import QName
+import pigpio
+
+from multiprocessing import Process as mltp, Queue
+import threading
+from threading import Thread, Event
+from time import sleep, clock_gettime_ns
+
+
+from IMI.imimessage import JOB, ExecJob, RunCmd, SoundPattern
+from IMI.runcommander import commandSetter
+from IMI.uisystem import JobControler, Sound
+from IMI.libs.devices.key.key import KeyEvent, UISWNAME, UISWSTATE
+from IMI.libs.devices.wallsensors.wallsensors import wallsensors
+
+imipi:pigpio.pi
+
+
+# def sensorLoop(pi:pigpio.pi):
+def sensorLoop(wsns:wallsensors):
+    global imipi
+    try:
+        # wsns = wallsensors(pi)
+        while True:
+            # print("sensorLoop")
+            # sleep(0.5)
+            # _ = wsns.read()
+            sleep(0.005)
+    except KeyboardInterrupt:
+        print("sensorLoop Exit")
+    finally:
+        pass
+
+def runCommanderLoop(jobQ:Queue, ctrlQue:Queue):
+    try:
+        while True:
+            # print("runCommanderLoop")
+            if not jobQ.empty():
+                job = jobQ.get()
+                cmdCtrlList:list[RunCmd]  = commandSetter(job)
+                print(f'cmdlist = {cmdCtrlList}')
+                index:int = 0
+                while index < len(cmdCtrlList):
+                    if not ctrlQue.full():
+                        if cmdCtrlList[index] == RunCmd.ENDLESS:
+                            index = 0
+
+                        ctrlQue.put(cmdCtrlList[index])
+                        # print(f'{index}:put {cmdCtrlList[index]}')
+                        sleep(0.1)
+                        index += 1
+                    else:
+                        sleep(0.1)
+            else:
+                sleep(0.01)
+    except KeyboardInterrupt:
+        print("runCommanderLoop Exit")
+    finally:
+        pass
+
+def runControllerLoop(wsns:wallsensors, ctrlQ:Queue):
+    try:
+        while True:
+            if not ctrlQ.empty():
+                ctrlCmd:RunCmd = ctrlQ.get()
+                if ctrlCmd == RunCmd.CHECK_SNSR:
+                    print(f"{wsns.read()}, {ctrlCmd}")
+                sleep(0.05)
+
+    except KeyboardInterrupt:
+        print("runControllerLoop Exit")
+    finally:
+        pass
+
+def runLoop(wsns:wallsensors, jobQ:Queue, ctrlQue:Queue):
+    try:
+        t_cmd = threading.Thread(target=runCommanderLoop,args=(jobQ,ctrlQue))
+        t_ctrl = threading.Thread(target=runControllerLoop, args=(wsns, ctrlQue))
+        t_cmd.start()
+        t_ctrl.start()
+        t_cmd.join()
+        t_ctrl.join()
+    except KeyboardInterrupt:
+        print("runLoop Exit")
+    finally:
+        pass
+
+def keyLoop(pi:pigpio.pi, dispQ:Queue, soundQ:Queue, jobQ:Queue):
+    try:
+        uiKey = KeyEvent(pi)
+        jobCtrl:JobControler = JobControler()
+        ejob:Optional[ExecJob]
+        dispStr:Optional[str]
+        
+        while True:
+            updatef, exitf, keydic = uiKey.detector()
+            # (ejob, dispStr, soundP) = jobCtrl.Selector(updatef, exitf, keydic)
+            # if dispStr is not None:
+            #     dispQ.put(dispStr)
+            # if ejob is not None:
+            #     jobQ.put(ejob)
+            # if soundP is not None:
+            #     soundQ.put(soundP)
+            print(f"{updatef},{exitf}")
+            if updatef:
+                if not exitf:
+                    print(f"state = {keydic}")
+                else:
+                    print("EXIT")
+            sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("Quit Key Input Loop")
+    finally:
+        jobCtrl.close()
+
+def soundLoop(sound:Sound, soundQ:Queue):
+    try:
+        while True:
+            # print("Sound Loop")
+            # sleep(0.5)
+            if not soundQ.empty():
+                sound.play(soundQ.get())
+    except KeyboardInterrupt:
+        print("Quit Sound Loop")
+    finally:
+        pass
+
+def displayLoop(pi:pigpio.pi, dispQ:Queue):
+    try:
+        while True:
+            dstr = dispQ.get()
+            print(f'DSPLAY = {dstr}')
+            sleep(0.5)
+    except KeyboardInterrupt:
+        print("display Loop Exit")
+
+def testLoop():
+    # UIKey = key.KeyPolling(pi = testpi)
+    try:
+        while True:
+            print("TEST")
+            sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("Ctrl + C is Input")
+    finally:
+        pass
+        # UIKey.close()
+
+def main():
+    # Ctrl+Cで全てのプロセスを正常終了させるためのシグナルハンドラ
+    global imipi
+    def signal_handler(sig:int, frame, processes):
+        print("\nCtrl+Cを受け取りました。すべてのプロセスを終了します...")
+        for process in processes:
+            process.terminate()
+            process.join()  # プロセスが終了するのを待つ
+        # sys.exit(0)
+
+    imipi = pigpio.pi()
+    UIKeyE = KeyEvent(imipi)
+    wsns = wallsensors(imipi)
+    soundObj:Sound = Sound(imipi)
+    displayQueue:Queue = Queue()
+    soundQueue:Queue = Queue()
+    job2CmdQueue:Queue = Queue()
+    cmd2CtrlQueue:Queue = Queue()
+
+    print("Main")
+
+
+# sensorLoop(pi:pigpio.pi):
+# runCommanderLoop():
+# runControllerLoop():
+# keyLoop(pi:pigpio.pi):
+# soundLoop(pi:pigpio.pi):
+# displayLoop(pi:pigpio.pi):
+
+    sensorLoop_process = mltp(target=sensorLoop, args=(wsns,))
+    # keyLoop_process = mltp(target=keyLoop, args=(imipi,displayQueue, soundQueue, job2CmdQueue,))
+    # runCommanderLoop_process = mltp(target=runCommanderLoop, args=(job2CmdQueue, cmd2CtrlQueue,))
+    # runControllerLoop_process = mltp(target=runControllerLoop, args=(wsns, cmd2CtrlQueue,))
+    runLoop_process = mltp(target=runLoop,args=(wsns, job2CmdQueue, cmd2CtrlQueue,))
+    soundLoop_process = mltp(target=soundLoop, args=(soundObj,soundQueue))
+    displayLoop_process = mltp(target=displayLoop, args=(imipi,displayQueue,))
+    testLoop_process = mltp(target=testLoop )
+
+    # runCommanderLoop_thread = threading.Thread(target=runCommanderLoop)
+    # runController_thread = threading.Thread(target=runControllerLoop)
+
+    # プロセスを開始
+    # keyLoop_process.start()
+    # soundLoop_process.start()
+    # displayLoop_process.start()
+    # sensorLoop_process.start()
+    # ## runCommanderLoop_process.start()
+    # ## runControllerLoop_process.start()
+    # runLoop_process.start()
+    testLoop_process.start()
+
+
+    # プロセスリストを作成
+    # processes = [sensorLoop_process, runCommanderLoop_process, runControllerLoop_process, keyLoop_process, soundLoop_process, displayLoop_process, runLoop_process]
+    # processes = [sensorLoop_process,  soundLoop_process, displayLoop_process, runLoop_process, testLoop_process]
+    processes = [testLoop_process]
+
+    # シグナルハンドラを設定
+    signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, processes))
+    # UIKey = key.KeyPolling(pi = testpi)
+    UIKeyE = KeyEvent(pi = imipi)
+    try:
+        while True:
+            update, exitf, swstate = UIKeyE.detector() 
+            if update:
+                if not exitf:
+                    print(f"state = {swstate}")
+                else:
+                    print("EXIT")
+            sleep(0.01)
+
+    except KeyboardInterrupt:
+        print("Ctrl + C is Input")
+    finally:
+        # UIKey.close()
+
+        # メインプロセスは子プロセスが終了するのを待つ
+        for process in processes:
+            process.join()
+
+        wsns.close()
+        soundObj.close()
+        UIKeyE.close()
+        imipi.stop()
+        print("Release Resource")
+
+def main2():
+    global imipi
+    imipi = pigpio.pi()
+    # UIKey = key.KeyPolling(pi = testpi)
+    UIKeyE = KeyEvent(pi = imipi)
+    try:
+        while True:
+            update, exitf, swstate = UIKeyE.detector() 
+            if update:
+                if not exitf:
+                    print(f"state = {swstate}")
+                else:
+                    print("EXIT")
+            sleep(0.01)
+
+    except KeyboardInterrupt:
+        print("Ctrl + C is Input")
+    finally:
+        # UIKey.close()
+        UIKeyE.close()
+
+if __name__ == '__main__':
+    lockfile = '/run/lock/imai/imi_main.lock'
+    if os.path.exists(lockfile):
+        print("locked")
+    else:
+        main()
+
+    
+# ディスプレイで現在のモードを確認する
+# モードを選ぶ(SEL ENT ESC)
+# 選んだモードで何を行わせるのか決める
+# 
+# 前に進むとか曲がるとかが行われる
+
+# root 
+#  | 
+#  +----RUN----+----Search
+#  |           |
+#  |           +----Fast0
+#  |           |
+#  |           |----Fast1
+#  |           |     :
+#  |           :     :
+#  |           :     :
+#  |           
+#  | 
+#  +----TEST---+----TURN
+#              |
+#              +----SENSOR

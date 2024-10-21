@@ -4,13 +4,14 @@ import os
 import math
 from typing import Optional
 from enum import Enum, IntEnum
+import pigpio
 sys.path.append('../driver')
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 # import driver.mcp3xxx as mcp3xxx
 # import driver.wsnsled as wsnsled
 # from IMI.libs.devices.driver import mcp3xxx
-from driver.mcp3xxx.mcp3xxx import MCP3xxx as ADC
+from driver.mcp3xxx.mcp3xxx import MCP3208 as ADC, MCP3XXX_OLD as ADCO
 from driver.wsnsled.wsnsled import WSNSLED as WLED
 
 class wallsensors:
@@ -35,13 +36,14 @@ class wallsensors:
         RR = 3
         LL = 0
     __cnstcnt :int = 0
-    __ON_WAIT_TIME = 0.005
-    __OFF_WAIT_TIME = 0.005
-    def __init__(self) -> None:
+    __ON_WAIT_TIME =    0.001
+    __OFF_WAIT_TIME =   0.001
+    def __init__(self, pi:pigpio.pi) -> None:
         # self.__ir_led = wsnsled.WSNSLED()
         # self.__ir_tr = mcp3xxx.MCP3XXX()
-        self.__ir_tr = ADC(spichannel=ADC.SPIchannel.CH_0, speed=50000, bit_10_12=ADC.resolution.BIT_12, chnum=ADC.ChannelNum.CH_8)
-        self.__ir_led = WLED()
+        # self.__ir_tr = ADC(pi=pi, spichannel=ADC.SPIchannel.CH_0, speed=50000)
+        self.__ir_tr = ADCO(spi_channel=0, speed=500000, bit = 12, chnum=8)
+        self.__ir_led = WLED(pi=pi)
 
         # self.PARAM_FL = self.adjustparam(-0.0439,149.99,200)
         # self.PARAM_FL = self.adjustparam(-0.0440,145.99,200) +5mm
@@ -83,7 +85,9 @@ class wallsensors:
 
         # FL check
         time.sleep(self.__OFF_WAIT_TIME)
+        # FL = self.__ir_tr.read(self.SNSCH.FL)
         FL = self.__ir_tr.read(self.SNSCH.FL)
+        # 前センサは左右干渉する可能性があるので同時点灯
         self.__ir_led.write(self.__ir_led.LED_FL, self.__ir_led.WLED_ON)
         self.__ir_led.write(self.__ir_led.LED_LL, self.__ir_led.WLED_ON)
         time.sleep(self.__ON_WAIT_TIME)

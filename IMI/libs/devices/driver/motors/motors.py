@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 # from rpi_hardware_pwm import HardwarePWM
 import pigpio
-
+# TODO:pigpioに置き換えたい
 class MOTORS:
     __EN_PIN : int    = 5
     __R_DIR_PIN :int  = 6
@@ -49,7 +49,7 @@ class MOTORS:
     def stop(self):
         GPIO.output(self.__EN_PIN, False)
 
-    def run(self, leftpps:int, rightpps:int) -> (int, int):
+    def run(self, leftpps:int, rightpps:int) -> tuple[int, int]:
         leftppsrslt : int = 0
         rightppsrslt : int = 0
         if  abs(leftpps) < abs(self.__PPS_MIN) or \

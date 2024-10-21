@@ -1,10 +1,12 @@
 import time
 import sys
 from wallsensors import wallsensors
+import pigpio
 
 
 def main():
-    ws = wallsensors()
+    pi = pigpio.pi()
+    ws = wallsensors(pi)
     cnt = 0
     loopnum : int = 16
     while True:
