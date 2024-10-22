@@ -3,6 +3,7 @@ import multiprocessing
 from time import sleep, clock_gettime_ns
 import signal
 import sys
+import os
 from threading import Thread, Event
 from multiprocessing import Process, Manager, Queue
 
@@ -14,6 +15,8 @@ from IMI.runcommander import commandSetter
 from IMI.uisystem import JobControler, Sound
 from IMI.libs.devices.wallsensors.wallsensors import wallsensors
 from IMI.libs.devices.key.key import KeyEvent, UISWNAME, UISWSTATE
+
+lockfile = '/run/lock/imai/imi_main.lock'
 
 ### Thread ###
 def testThreadLoop(id:int, stop_event:Event) -> None:
@@ -161,4 +164,7 @@ def main():
             imipi.stop()
 
 if __name__ == '__main__':
-    main()
+    if os.path.exists(lockfile):
+        print("locked")
+    else:
+        main()
