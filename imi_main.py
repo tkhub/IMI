@@ -28,6 +28,21 @@ def testThreadLoop(id:int, stop_event:Event) -> None:
     finally:
         print("test Thread END")
 
+def displayThreadLoop(pi:pigpio.pi, stop_event:Event, dispQ:Queue) -> None:
+    try:
+        dispThreadLoopCnt:int = 0
+        dispstr:str
+        while not stop_event.is_set():
+            if not dispQ.empty():
+                dispstr = dispQ.get()
+                print(f"DISPLAY:{dispThreadLoopCnt}:{dispstr}")
+                dispThreadLoopCnt += 1
+            sleep(0.5)
+    except KeyboardInterrupt:
+        print("Display Thread Keyboard Interrupt")
+    finally:
+        print("Display Thread END")
+
 
 ### Multiprocess ###
 def testProcessLoop(id:int, mp_stop_event:Event) -> None:
@@ -84,13 +99,15 @@ def main():
         imipi = pigpio.pi()
         UIKeyE = KeyEvent(imipi)
         sound = Sound(imipi)
+        jobCtrl = JobControler()
         job2CmdQ = Queue()
+        displayQ = Queue()
         soundQ = Queue(maxsize=64)
         mainCnt:int = 0
         # スレッド
         test_thread: Thread = threading.Thread(target=testThreadLoop, args=(1, stop_event))
         sound_thread: Thread = threading.Thread(target=soundLoop, args=(sound, stop_event, soundQ))
-        
+        display_thread: Thread = threading.Thread(target=displayThreadLoop, args=(imipi, stop_event, displayQ))
 
         # プロセス
         test_process: Process = multiprocessing.Process(target=testProcessLoop, args=(2, mp_stop_event))
@@ -99,6 +116,7 @@ def main():
         # スレッドを開始
         test_thread.start()
         sound_thread.start()
+        display_thread.start()
 
         # プロセスを開始
         test_process.start()
@@ -110,17 +128,20 @@ def main():
         # ユーザーのスイッチ入力を待機
         try:
             while not stop_event.is_set():
-                update, exitf, swstate = UIKeyE.detector() 
+                updatef, exitf, keysdic = UIKeyE.detector() 
+                (ejob, dispStr, soundP) = jobCtrl.Selector(updatef, exitf, keysdic)
                 if exitf:
                     print("####EXIT####")
                     stop_event.set()  # スレッドの停止を指示
                     mp_stop_event.set()  # プロセスの停止を指示
-                elif update:
-                    print(f"{swstate}")
-                    job2CmdQ.put(mainCnt)
-                    soundQ.put(SoundPattern.OK_0)
                 else:
-                    sleep(0.025)
+                    if dispStr is not None:
+                        displayQ.put(dispStr)
+                    if soundP is not None:
+                        soundQ.put(soundP)
+                    if ejob is not None:
+                        job2CmdQ.put(mainCnt)
+                sleep(0.025)
                 mainCnt += 1
         except KeyboardInterrupt:
             print("\nKeyboardInterruptが発生しました。")
@@ -130,6 +151,7 @@ def main():
 
             test_thread.join()
             sound_thread.join()
+            display_thread.join()
 
             test_process.join()
             runLoop_process.join()
