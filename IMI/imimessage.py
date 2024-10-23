@@ -6,6 +6,8 @@ from token import OP
 from typing import TypedDict, Dict, Optional, Tuple
 from enum import EJECT, Enum, auto
 
+# from networkx import hexagonal_lattice_graph
+
 # TODO:MENUを選んで実行する処理を実行する
 # TODO:TOOLにテストモーションを入れたい
 # TODO:TOOLにセンサ値を表示させたい
@@ -27,15 +29,12 @@ class RunCmd(Enum):
     CALIBRATE   = auto()
     CHECK_SNSR = auto()
 
-class JOB_OPERATE(Enum):
-    ERROR       = 0
-    NOUPDATE    = auto()
-    ESCAPE      = auto()
-    ENTER       = auto()
-    SELECT      = auto()
-    EXIT        = auto()
-    EJECT       = auto()
-    EXECUTE     = auto()
+class JOB_STATE(Enum):
+    INIT = 0
+    CHOICE = auto()
+    EXEC = auto()
+    ABORT = auto()
+    HALT = auto()
 
 class JOB(Enum):
     ROOT    = auto()
@@ -86,6 +85,10 @@ JOB_TABLE:dict[JOB,list[JOB]] = {
 class SoundPattern(Enum):
     NONE_TONE   = 0
     BOOT_0      = auto()
+    ABORT_R     = auto()
+    ABORT       = auto()
+    HALT_R      = auto()
+    HALT        = auto()
     EXIT_0      = auto()
     OK_0        = auto()
     OK_1        = auto()
@@ -171,11 +174,38 @@ SoundPatternTABLE:dict[SoundPattern,list[tuple[Optional[int], Optional[float], O
                                     (MusicalScale.C6.value,     0.1, None),
                                     (MusicalScale.B6.value,     0.5, 0),
     ],
+    SoundPattern.ABORT_R:       [   
+                                    (MusicalScale.C5S.value,    0.5, None),
+                                    (MusicalScale.B3.value,     0.25, None),
+    ],
+    SoundPattern.ABORT:         [   
+                                    (MusicalScale.C5S.value,    0.5, None),
+                                    (MusicalScale.B3.value,     0.25, None),
+                                    (MusicalScale.C5S.value,    0.5, None),
+                                    (MusicalScale.B3.value,     0.25, None),
+                                    (MusicalScale.C5S.value,    0.5, None),
+                                    (MusicalScale.B3.value,     0.25, 0),
+    ],
+
     SoundPattern.EXIT_0:        [   
                                     (MusicalScale.B5.value,     0.1, None),
                                     (MusicalScale.C4S.value,    0.2, None),
                                     (MusicalScale.F3S.value,    0.2, None),
                                     (MusicalScale.C3.value,     0.5, 0),
+    ],
+
+    SoundPattern.HALT_R:        [   
+                                    (MusicalScale.G5S.value,    0.2, None),
+                                    (MusicalScale.B4.value,     0.1, None),
+    ],
+
+    SoundPattern.HALT:          [   
+                                    (MusicalScale.G5S.value,    0.5, None),
+                                    (MusicalScale.B4.value,     0.25, None),
+                                    (MusicalScale.E4.value,    0.5, None),
+                                    (MusicalScale.F4S.value,     0.25, None),
+                                    (MusicalScale.G5S.value,    0.5, None),
+                                    (MusicalScale.F4S.value,     0.25, 0),
     ],
 
     SoundPattern.OK_0:          [

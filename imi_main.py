@@ -10,13 +10,14 @@ from multiprocessing import Process, Manager, Queue
 
 import pigpio
 
-from IMI.imimessage import JOB, ExecJob, RunCmd, SoundPattern
+from IMI.imimessage import JOB, ExecJob, RunCmd, SoundPattern, JOB_STATE
 from IMI.runcommander import commandSetter
 from IMI.uisystem import JobControler, Sound
 from IMI.libs.devices.wallsensors.wallsensors import wallsensors
-from IMI.libs.devices.key.key import KeyEvent, UISWNAME, UISWSTATE
+from IMI.libs.devices.key.key import KeyEvent, UISWNAME, UISWSTATE, UISWEXIT
 
 lockfile = '/run/lock/imai/imi_main.lock'
+daemonfile = '/run/lock/imai/imi_main.daemon'
 
 ### Thread ###
 def testThreadLoop(id:int, stop_event:Event) -> None:
@@ -94,8 +95,9 @@ def signal_handler(sig: int, frame, stop_event: Event, mp_stop_event:Event) -> N
     mp_stop_event.set()  # マルチプロセス用イベントをセット
 
 # メイン関数でユーザー入力を処理
-def main():
+def main() -> bool:
     # マネージャーを使ってマルチプロセス間で共有できるイベントを作成
+    mainExitSt:bool = False
     with Manager() as manager:
         stop_event = Event()  # スレッド用の終了イベント
         mp_stop_event = manager.Event()  # プロセス間で共有する終了イベント
@@ -130,21 +132,28 @@ def main():
 
         # ユーザーのスイッチ入力を待機
         try:
+            exitflag:bool = False
             while not stop_event.is_set():
-                updatef, exitf, keysdic = UIKeyE.detector() 
-                (ejob, dispStr, soundP) = jobCtrl.Selector(updatef, exitf, keysdic)
-                if exitf:
+                updatef, exitSt, keysdic = UIKeyE.detector() 
+                (jobSt, ejob, dispStr, soundP) = jobCtrl.Selector(updatef, exitSt, keysdic)
+                if jobSt == JOB_STATE.ABORT:
                     print("####EXIT####")
+                    mainExitSt = False
+                    exitflag = True
+                elif jobSt == JOB_STATE.HALT:
+                    mainExitSt = True
+                    exitflag = True
+                if dispStr is not None:
+                    displayQ.put(dispStr)
+                if soundP is not None:
+                    soundQ.put(soundP)
+                if ejob is not None:
+                    job2CmdQ.put(mainCnt)
+                sleep(0.025)
+                if exitflag:
+                    sleep(1)
                     stop_event.set()  # スレッドの停止を指示
                     mp_stop_event.set()  # プロセスの停止を指示
-                else:
-                    if dispStr is not None:
-                        displayQ.put(dispStr)
-                    if soundP is not None:
-                        soundQ.put(soundP)
-                    if ejob is not None:
-                        job2CmdQ.put(mainCnt)
-                sleep(0.025)
                 mainCnt += 1
         except KeyboardInterrupt:
             print("\nKeyboardInterruptが発生しました。")
@@ -162,9 +171,19 @@ def main():
             print("すべてのスレッドとプロセスが正常に停止しました。")
             UIKeyE.close()
             imipi.stop()
+    return mainExitSt
 
 if __name__ == '__main__':
     if os.path.exists(lockfile):
         print("locked")
+
     else:
-        main()
+        rtn = main()
+        if rtn:
+            #正常に終了させた場合
+            print("normal end")
+            sys.exit(0)
+        else:
+            # 全ボタン押しなどで強制終了させた場合
+            print("force end")
+            sys.exit(1)

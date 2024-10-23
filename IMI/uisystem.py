@@ -7,11 +7,10 @@ from time import clock_gettime, sleep
 from token import OP
 from typing import Optional
 
-from IMI.libs.devices.driver.uisw.uisw import UISW
 
 from .libs.devices.driver.buzzer.buzzer import UIBZ as DRV_BUZZER
-from .libs.devices.key.key import UISWNAME, UISWSTATE
-from .imimessage import JOB, JOB_ARGN, JOB_OPERATE, JOB_STR, JOB_TABLE, ExecJob
+from .libs.devices.key.key import UISWNAME, UISWSTATE, UISWEXIT
+from .imimessage import JOB, JOB_ARGN, JOB_STATE, JOB_STR, JOB_TABLE, ExecJob
 from .imimessage import SoundPattern, SoundPatternTABLE
 
 import pigpio
@@ -60,12 +59,13 @@ class JobControler:
             rtnstr += ";"
         return rtnstr
 
-    def Selector(self, updatef:bool, exitflag:bool, keys:dict[UISWNAME, UISWSTATE]) -> tuple[Optional[ExecJob], Optional[str], Optional[SoundPattern]]:
+    def Selector(self, updatef:bool, exitSt:UISWEXIT, keys:dict[UISWNAME, UISWSTATE]) -> tuple[JOB_STATE, Optional[ExecJob], Optional[str], Optional[SoundPattern]]:
         joblist:list[JOB]
         prev_j:JOB
         next_js:list[JOB]
         soundp:Optional[SoundPattern] = None
         job:Optional[JOB] = None
+        jobSt:JOB_STATE = JOB_STATE.INIT
         outstr:Optional[str] = None
         strUpdate:bool = False
         ejob:Optional[ExecJob] = None
@@ -75,12 +75,19 @@ class JobControler:
             self.__longf = False
             soundp = SoundPattern.BOOT_0
             strUpdate = True
+            jobSt = JOB_STATE.CHOICE
             update = True
+        elif exitSt == UISWEXIT.CONFIRM:
+            jobSt = JOB_STATE.ABORT
+            soundp = SoundPattern.ABORT
+            print("ABORT")
+        elif exitSt == UISWEXIT.READY:
+            soundp = SoundPattern.ABORT_R
+            print("ABORT RADEY")
         elif updatef:
             joblist = JOB_TABLE[self.__NOWJOB]
             prev_j = joblist[0]
             next_js = joblist[1:]
-            
             # 実行中の場合
             if self.__exec:
                 # 実行中ESCを押されたら抜ける
@@ -127,8 +134,13 @@ class JobControler:
             elif self.__NOWJOB == JOB.ROOT:
                 self.__argn = 0
                 # 最始端の場合戻れないのでエラー
-                if keys[UISWNAME.ESCAPE] != UISWSTATE.NON:
+                if keys[UISWNAME.ESCAPE] == UISWSTATE.PUSH:
                     soundp = SoundPattern.ERROR_0
+                elif keys[UISWNAME.ESCAPE] == UISWSTATE.PRESS:
+                    soundp = SoundPattern.HALT_R
+                elif keys[UISWNAME.ESCAPE] == UISWSTATE.RELEASE:
+                    soundp = SoundPattern.HALT
+                    jobSt = JOB_STATE.HALT
                 elif keys[UISWNAME.ENTER] == UISWSTATE.PUSH:
                     self.__NOWJOB = next_js[self.__jobselcnt]
                     soundp = SoundPattern.OK_0
@@ -163,7 +175,7 @@ class JobControler:
         if strUpdate:
             outstr = self.__Job2Str(self.__NOWJOB, self.__argn)
             # print(f'{outstr}, {escape}')
-        return (ejob, outstr, soundp )
+        return (jobSt, ejob, outstr, soundp )
     
     def nantyarakantyara(self):
         pass
