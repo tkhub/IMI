@@ -80,6 +80,7 @@ do
         if [ -f $DAEMONFILE_PATH ]; then
             rm $DAEMONFILE_PATH
         fi 
+        break
     else
         echo "#### EXEC MAIN ####" >> $LOGFILE_PATH
         sudo -u $MAIN_PY_USER $PYTHON_BIN $MAINPY_PATH
